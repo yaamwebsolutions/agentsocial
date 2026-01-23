@@ -11,12 +11,19 @@ echo "========================================"
 echo "🚀 Starting Agent Twitter Application"
 echo "========================================"
 
-# Load environment variables from .env file
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-    echo "✅ Environment variables loaded from .env"
+# Load environment variables from .env.local or .env
+ENV_FILE=""
+if [ -f .env.local ]; then
+    ENV_FILE=".env.local"
+elif [ -f .env ]; then
+    ENV_FILE=".env"
+fi
+
+if [ -n "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+    echo "✅ Environment variables loaded from $ENV_FILE"
 else
-    echo "⚠️  Warning: .env file not found!"
+    echo "⚠️  Warning: .env.local or .env file not found!"
 fi
 
 # Function to cleanup on exit

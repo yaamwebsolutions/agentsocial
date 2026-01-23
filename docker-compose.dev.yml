@@ -1,0 +1,69 @@
+# =============================================================================
+# Agent Twitter - Development Docker Compose
+# Use this for local development with hot-reload
+# =============================================================================
+#
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up
+#
+# Features:
+#   - Hot-reload for both backend and frontend
+#   - Volume mounts for live code editing
+#   - Debug ports exposed
+#
+# =============================================================================
+
+version: "3.9"
+
+services:
+  # =============================================================================
+  # Backend - Development Mode
+  # =============================================================================
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: agent-twitter-backend-dev
+    restart: "no"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+      - "5678:5678"  # Debugger port
+    environment:
+      - APP_ENV=development
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=8000
+      - BACKEND_LOG_LEVEL=DEBUG
+      - RELOAD=true
+    volumes:
+      - ./backend:/app
+      - backend_venv:/app/.venv
+    networks:
+      - agent-twitter-network
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # =============================================================================
+  # Frontend - Development Mode
+  # =============================================================================
+  frontend-dev:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    container_name: agent-twitter-frontend-dev
+    restart: "no"
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    networks:
+      - agent-twitter-network
+    command: ["npm", "run", "dev", "--", "--host"]
+
+networks:
+  agent-twitter-network:
+    driver: bridge
+
+volumes:
+  backend_venv:

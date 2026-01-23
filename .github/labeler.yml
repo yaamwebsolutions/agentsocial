@@ -1,0 +1,58 @@
+# PR Labeler Configuration
+# Labels are automatically applied based on changed files
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - backend/**/*
+          - "*.py"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - app/**/*
+          - "*.ts"
+          - "*.tsx"
+          - "*.jsx"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**/*"
+          - ".github/**/*"
+
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Dockerfile*"
+          - "docker-compose*.yml"
+          - ".dockerignore"
+
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**/*"
+          - "!.github/ISSUE_TEMPLATE/**/*"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "requirements.txt"
+          - "package*.json"
+          - "package-lock.json"
+
+configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".env*"
+          - "config.py"
+          - "*.json"
+          - "*.yaml"
+          - "*.yml"
+
+agent:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/agents.json"
+          - "backend/agents.py"

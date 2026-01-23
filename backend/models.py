@@ -23,6 +23,7 @@ class Agent(BaseModel):
     tools: List[str] = Field(default_factory=list)
     color: str = "#3B82F6"
     icon: str = "🤖"
+    mock_responses: List[str] = Field(default_factory=list)
 
 class User(BaseModel):
     id: str

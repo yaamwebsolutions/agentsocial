@@ -141,6 +141,15 @@ class MockLLM:
     ) -> str:
         """Generate a mock response based on agent type"""
         agent_id = agent.id if hasattr(agent, 'id') else agent
+        context_short = context[:200]
+
+        if hasattr(agent, "mock_responses") and agent.mock_responses:
+            import random
+            responses = [
+                resp.replace("{context}", context_short)
+                for resp in agent.mock_responses
+            ]
+            return random.choice(responses)
 
         responses = {
             "grok": MockLLM._grok_response(context),

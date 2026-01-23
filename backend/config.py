@@ -9,20 +9,23 @@ from pathlib import Path
 # Get the project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables from .env file
+# Load environment variables from .env.local or .env
 try:
     from dotenv import load_dotenv
-    load_dotenv(BASE_DIR / ".env")
+    for env_path in (BASE_DIR / ".env.local", BASE_DIR / ".env"):
+        if env_path.exists():
+            load_dotenv(env_path, override=True)
 except ImportError:
     # If python-dotenv is not installed, try to load manually
-    env_file = BASE_DIR / ".env"
-    if env_file.exists():
-        with open(env_file) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    os.environ[key.strip()] = value.strip()
+    for env_file in (BASE_DIR / ".env.local", BASE_DIR / ".env"):
+        if env_file.exists():
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, value = line.split("=", 1)
+                        os.environ[key.strip()] = value.strip()
+            break
 
 # =============================================================================
 # APPLICATION CONFIG
@@ -133,6 +136,13 @@ YAAM_ENABLED = bool(YAAM_API_URL)
 AGENT_TIMEOUT = int(os.getenv("AGENT_TIMEOUT", "30"))
 MAX_THREAD_LENGTH = int(os.getenv("MAX_THREAD_LENGTH", "100"))
 USE_REAL_LLM = os.getenv("USE_REAL_LLM", "true").lower() == "true" or DEEPSEEK_ENABLED
+AGENTS_CONFIG_PATH = os.getenv(
+    "AGENTS_CONFIG_PATH",
+    str(BASE_DIR / "backend" / "agents.json")
+)
+AGENTS_CONFIG_STRICT = os.getenv("AGENTS_CONFIG_STRICT", "false").lower() == "true"
+if AGENTS_CONFIG_PATH and not Path(AGENTS_CONFIG_PATH).is_absolute():
+    AGENTS_CONFIG_PATH = str((BASE_DIR / AGENTS_CONFIG_PATH).resolve())
 
 
 def print_config():
@@ -143,6 +153,7 @@ def print_config():
     print(f"Server: {BACKEND_HOST}:{BACKEND_PORT}")
     print(f"CORS Origins: {CORS_ORIGINS}")
     print(f"Log Level: {BACKEND_LOG_LEVEL}")
+    print(f"Agents Config: {AGENTS_CONFIG_PATH}")
     print(f"\n--- Services Status ---")
     print(f"DeepSeek LLM: {'ENABLED' if DEEPSEEK_ENABLED else 'DISABLED (using mock)'}")
     print(f"PostgreSQL DB: {'ENABLED' if DATABASE_ENABLED else 'DISABLED (using in-memory)'}")

@@ -1,0 +1,27 @@
+# =============================================================================
+# Agent Twitter - Frontend Development Dockerfile
+# Includes development tools and supports hot-reload via Vite dev server
+# =============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install tools
+RUN apk add --no-cache curl
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Set development environment
+ENV VITE_API_BASE_URL=http://localhost:8000
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

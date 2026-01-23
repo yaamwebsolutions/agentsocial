@@ -18,6 +18,7 @@ export interface Agent {
   tools: string[];
   color: string;
   icon: string;
+  mock_responses?: string[];
 }
 
 export interface Post {

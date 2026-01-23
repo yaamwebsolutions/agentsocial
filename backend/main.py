@@ -5,7 +5,7 @@ Main application with environment-based configuration.
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import logging
 import uvicorn
 
@@ -27,6 +27,7 @@ from services.media_service import media_service
 from services.scraping_service import scraping_service
 from services.email_service import email_service
 from services.llm_service import generate_agent_response
+from monitoring import monitoring
 
 # Configure logging
 logging.basicConfig(
@@ -35,11 +36,91 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+# =============================================================================
+# API METADATA & DOCUMENTATION
+# =============================================================================
+
+tags_metadata = [
+    {
+        "name": "Posts",
+        "description": "Create and retrieve posts and threaded conversations",
+    },
+    {
+        "name": "Agents",
+        "description": "Manage AI agents and send direct prompts",
+    },
+    {
+        "name": "Search",
+        "description": "Web search and content discovery endpoints",
+    },
+    {
+        "name": "Media",
+        "description": "Image and video generation and search",
+    },
+    {
+        "name": "Scraping",
+        "description": "Web scraping and content extraction",
+    },
+    {
+        "name": "Email",
+        "description": "Email notifications via Resend",
+    },
+    {
+        "name": "Users",
+        "description": "User profile and information",
+    },
+    {
+        "name": "Health",
+        "description": "Health check and system status",
+    },
+]
+
 app = FastAPI(
     title=f"{APP_NAME} API",
     version=APP_VERSION,
-    description="AI-powered Twitter-like platform with agent mentions"
+    description="""## AI-Powered Twitter-like Platform with Agent Mentions
+
+Agent Twitter allows you to create posts and @mention AI agents to get intelligent responses.
+
+### Features
+- **Config-driven Agents**: Add/remove agents without code changes via `agents.json`
+- **Multiple Integrations**: LLM, web search, media generation, email notifications
+- **Threaded Conversations**: Full discussion thread support
+- **Modular Architecture**: Easy to extend with new services
+
+### Quick Start
+1. Create a post with an agent mention: `Hello @grok!`
+2. The agent will automatically respond
+3. Continue the conversation by replying
+
+### Agent Mentions
+Supported agents include:
+- **@grok** - Generalist AI assistant
+- **@factcheck** - Fact-checking and verification
+- **@summarizer** - Content summarization
+- **@writer** - Content creation and refinement
+- **@dev** - Technical problem solving
+- **@analyst** - Strategic analysis
+- **@researcher** - Information gathering
+- **@coach** - Personal development
+
+### Configuration
+Agents are configured via `backend/agents.json`. See the [GitHub repo](https://github.com/yourusername/agent-twitter) for details.
+""",
+    version=APP_VERSION,
+    terms_of_service="https://github.com/yourusername/agent-twitter/blob/main/CODE_OF_CONDUCT.md",
+    contact={
+        "name": "Agent Twitter Contributors",
+        "url": "https://github.com/yourusername/agent-twitter",
+        "email": "support@example.com",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://github.com/yourusername/agent-twitter/blob/main/LICENSE",
+    },
+    openapi_tags=tags_metadata,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # CORS configuration
@@ -93,25 +174,42 @@ class AgentPromptRequest(BaseModel):
 # POSTS ENDPOINTS
 # =============================================================================
 
-@app.post("/posts", response_model=CreatePostResponse)
+@app.post("/posts", response_model=CreatePostResponse, tags=["Posts"])
 async def create_post(request: CreatePostRequest):
-    """Create a new post and trigger any mentioned agents"""
+    """
+    Create a new post and trigger any mentioned agents.
+
+    Agents are mentioned using the @handle syntax (e.g., @grok).
+    When agents are mentioned, they will automatically generate responses.
+
+    - **text**: The post content (supports agent mentions with @)
+    - **parent_id**: Optional ID of parent post for replies
+    """
     result = await orchestrator.process_post(request.text, request.parent_id)
     return result
 
 
-@app.get("/threads/{thread_id}", response_model=Thread)
+@app.get("/threads/{thread_id}", response_model=Thread, tags=["Posts"])
 async def get_thread(thread_id: str):
-    """Get a thread with all replies"""
+    """
+    Get a thread with all replies.
+
+    Returns the root post and all associated replies in chronological order.
+    """
     thread = store.get_thread(thread_id)
     if not thread:
         raise HTTPException(status_code=404, detail="Thread not found")
     return thread
 
 
-@app.get("/timeline", response_model=List[TimelinePost])
+@app.get("/timeline", response_model=List[TimelinePost], tags=["Posts"])
 async def get_timeline(limit: int = 50):
-    """Get timeline posts (root posts only)"""
+    """
+    Get timeline posts (root posts only).
+
+    Returns the most recent posts in reverse chronological order.
+    Use the limit parameter to control the number of results.
+    """
     return store.get_timeline_posts(limit)
 
 
@@ -119,24 +217,42 @@ async def get_timeline(limit: int = 50):
 # AGENTS ENDPOINTS
 # =============================================================================
 
-@app.get("/agents", response_model=List[Agent])
+@app.get("/agents", response_model=List[Agent], tags=["Agents"])
 async def get_agents():
-    """List all available agents"""
+    """
+    List all available agents.
+
+    Returns a list of all configured agents with their metadata including
+    name, handle, role, and capabilities.
+    """
     return list_agents()
 
 
-@app.get("/agents/{handle}", response_model=Agent)
+@app.get("/agents/{handle}", response_model=Agent, tags=["Agents"])
 async def get_agent_by_handle(handle: str):
-    """Get a specific agent by handle"""
+    """
+    Get a specific agent by handle.
+
+    Returns detailed information about a specific agent including
+    its role, policy, style, and available tools.
+    """
     agent = get_agent(handle)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     return agent
 
 
-@app.post("/agents/prompt")
+@app.post("/agents/prompt", tags=["Agents"])
 async def prompt_agent(request: AgentPromptRequest):
-    """Send a direct prompt to an agent without creating a post"""
+    """
+    Send a direct prompt to an agent without creating a post.
+
+    Use this endpoint for one-off interactions with agents that
+    don't need to be stored as posts.
+
+    - **agent_handle**: The agent's @handle (with or without @)
+    - **prompt**: The message to send to the agent
+    """
     agent = get_agent(request.agent_handle.lstrip('@'))
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -160,9 +276,14 @@ async def prompt_agent(request: AgentPromptRequest):
 # SEARCH ENDPOINTS
 # =============================================================================
 
-@app.post("/search/web")
+@app.post("/search/web", tags=["Search"])
 async def web_search(request: SearchRequest):
-    """Search the web using Serper.dev"""
+    """
+    Search the web using Serper.dev.
+
+    Requires SERPER_API_KEY to be configured.
+    Returns organic search results with title, link, and snippet.
+    """
     if not SERPER_ENABLED:
         raise HTTPException(status_code=501, detail="Search service not enabled")
 
@@ -181,9 +302,14 @@ async def web_search(request: SearchRequest):
     return {"query": request.query, "results": formatted}
 
 
-@app.get("/search/images/{query}")
+@app.get("/search/images/{query}", tags=["Search"])
 async def image_search(query: str, per_page: int = 10):
-    """Search for images using available media services"""
+    """
+    Search for images using available media services.
+
+    Searches across multiple stock image services (Pexels, Pixabay, Unsplash).
+    Requires at least one media service API key to be configured.
+    """
     results = await media_service.search_images(query, per_page)
     return {"query": query, "results": results}
 
@@ -192,9 +318,17 @@ async def image_search(query: str, per_page: int = 10):
 # SCRAPING ENDPOINTS
 # =============================================================================
 
-@app.post("/scrape")
+@app.post("/scrape", tags=["Scraping"])
 async def scrape_webpage(request: ScrapeRequest):
-    """Scrape a webpage and extract content"""
+    """
+    Scrape a webpage and extract content.
+
+    Requires SCRAPERAPI_KEY to be configured.
+    Returns the page title, text content, and optionally extracted links.
+
+    - **url**: The URL to scrape
+    - **extract_links**: Whether to extract links from the page
+    """
     if not SCRAPERAPI_ENABLED:
         raise HTTPException(status_code=501, detail="Scraping service not enabled")
 
@@ -216,9 +350,17 @@ async def scrape_webpage(request: ScrapeRequest):
 # MEDIA ENDPOINTS
 # =============================================================================
 
-@app.post("/media/images/generate")
+@app.post("/media/images/generate", tags=["Media"])
 async def generate_image(request: ImageGenerateRequest):
-    """Generate an image using KlingAI"""
+    """
+    Generate an image using KlingAI.
+
+    Requires KLINGAI_ACCESS_KEY and KLINGAI_SECRET_KEY to be configured.
+
+    - **prompt**: The image generation prompt
+    - **image_size**: Aspect ratio (e.g., "16:9")
+    - **num_images**: Number of images to generate
+    """
     if not KLINGAI_ENABLED:
         raise HTTPException(status_code=501, detail="Image generation service not enabled")
 
@@ -231,18 +373,34 @@ async def generate_image(request: ImageGenerateRequest):
     return {"prompt": request.prompt, "result": result}
 
 
-@app.post("/media/images/search")
+@app.post("/media/images/search", tags=["Media"])
 async def search_images(request: ImageSearchRequest):
-    """Search for stock images"""
+    """
+    Search for stock images.
+
+    Searches across Pexels, Pixabay, and Unsplash based on configuration.
+    Set source to "auto" to search all available services.
+
+    - **query**: Search query string
+    - **per_page**: Number of results to return
+    - **source**: Specific service or "auto" for all
+    """
     results = await media_service.search_images(
         request.query, request.per_page, request.source
     )
     return {"query": request.query, "source": request.source, "results": results}
 
 
-@app.post("/media/videos/search")
+@app.post("/media/videos/search", tags=["Media"])
 async def search_videos(query: str, per_page: int = 10):
-    """Search for stock videos"""
+    """
+    Search for stock videos.
+
+    Searches across Pexels and Pixabay for video content.
+
+    - **query**: Search query string
+    - **per_page**: Number of results to return
+    """
     results = await media_service.search_videos(query, per_page)
     return {"query": query, "results": results}
 
@@ -251,9 +409,17 @@ async def search_videos(query: str, per_page: int = 10):
 # EMAIL ENDPOINTS
 # =============================================================================
 
-@app.post("/email/send")
+@app.post("/email/send", tags=["Email"])
 async def send_email(request: EmailSendRequest):
-    """Send an email using Resend"""
+    """
+    Send an email using Resend.
+
+    Requires RESEND_API_KEY to be configured.
+
+    - **to**: Recipient email address
+    - **subject**: Email subject line
+    - **html**: HTML email body
+    """
     if not RESEND_ENABLED:
         raise HTTPException(status_code=501, detail="Email service not enabled")
 
@@ -273,9 +439,13 @@ async def send_email(request: EmailSendRequest):
 # USER ENDPOINTS
 # =============================================================================
 
-@app.get("/me", response_model=User)
+@app.get("/me", response_model=User, tags=["Users"])
 async def get_current_user():
-    """Get current user info"""
+    """
+    Get current user info.
+
+    Returns the profile information for the authenticated user.
+    """
     return store.current_user
 
 
@@ -283,16 +453,24 @@ async def get_current_user():
 # AGENT RUNS ENDPOINTS
 # =============================================================================
 
-@app.get("/threads/{thread_id}/agent-runs")
+@app.get("/threads/{thread_id}/agent-runs", tags=["Posts"])
 async def get_thread_agent_runs(thread_id: str):
-    """Get active agent runs for a thread"""
+    """
+    Get active agent runs for a thread.
+
+    Returns information about agent processing runs for the specified thread.
+    """
     runs = store.get_active_agent_runs(thread_id)
     return {"runs": runs}
 
 
-@app.post("/agent-runs/{run_id}/retry")
+@app.post("/agent-runs/{run_id}/retry", tags=["Posts"])
 async def retry_agent_run(run_id: str):
-    """Retry a failed agent run (not implemented yet)"""
+    """
+    Retry a failed agent run.
+
+    This endpoint is not yet implemented.
+    """
     raise HTTPException(status_code=501, detail="Not implemented")
 
 
@@ -300,9 +478,13 @@ async def retry_agent_run(run_id: str):
 # HEALTH & STATUS ENDPOINTS
 # =============================================================================
 
-@app.get("/health")
+@app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """
+    Health check endpoint.
+
+    Returns a simple status check for load balancers and monitoring systems.
+    """
     return {
         "status": "ok",
         "app": APP_NAME,
@@ -311,9 +493,14 @@ async def health_check():
     }
 
 
-@app.get("/status")
+@app.get("/status", tags=["Health"])
 async def get_status():
-    """Get service status"""
+    """
+    Get detailed service status.
+
+    Returns the status of all configured services and integrations.
+    Useful for debugging and monitoring.
+    """
     return {
         "app": APP_NAME,
         "version": APP_VERSION,
@@ -329,9 +516,13 @@ async def get_status():
     }
 
 
-@app.get("/")
+@app.get("/", tags=["Health"])
 async def root():
-    """Root endpoint with API information"""
+    """
+    Root endpoint with API information.
+
+    Returns an overview of available endpoints and links to documentation.
+    """
     return {
         "name": APP_NAME,
         "version": APP_VERSION,
@@ -347,7 +538,57 @@ async def root():
             "email": "/email/send",
             "health": "/health",
             "status": "/status"
+        },
+        "documentation": {
+            "swagger": "/docs",
+            "redoc": "/redoc",
+            "openapi": "/openapi.json"
         }
+    }
+
+
+# =============================================================================
+# MONITORING & METRICS ENDPOINTS
+# =============================================================================
+
+@app.get("/metrics", tags=["Health"])
+async def get_metrics(since_minutes: Optional[int] = None):
+    """
+    Get application metrics.
+
+    Returns counters, gauges, and metric summaries.
+    Use `since_minutes` to get metrics from a specific time window.
+    """
+    from datetime import timedelta
+    since = timedelta(minutes=since_minutes) if since_minutes else None
+    return monitoring.get_metrics(since=since)
+
+
+@app.get("/health/detailed", tags=["Health"])
+async def detailed_health_check():
+    """
+    Detailed health check with system resources.
+
+    Returns health status for system resources (CPU, memory, disk)
+    and can be extended with custom health checks.
+    """
+    return monitoring.get_health()
+
+
+@app.get("/monitoring/status", tags=["Health"])
+async def monitoring_status():
+    """
+    Get monitoring system status.
+
+    Returns information about the monitoring system itself,
+    including registered health checks and metric count.
+    """
+    return {
+        "status": "running",
+        "health_checks": len(monitoring.health.checks),
+        "metrics_count": len(monitoring.registry._metrics),
+        "counters_count": len(monitoring.registry._counters),
+        "gauges_count": len(monitoring.registry._gauges),
     }
 
 
