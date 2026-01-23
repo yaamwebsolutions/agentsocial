@@ -27,8 +27,8 @@ class TestStoreInitialization:
         assert hasattr(store, "posts")
 
     def test_store_has_threads(self):
-        """Test that store has threads attribute"""
-        assert hasattr(store, "threads")
+        """Test that store has get_thread method"""
+        assert hasattr(store, "get_thread")
 
     def test_store_has_current_user(self):
         """Test that store has current_user attribute"""
@@ -60,13 +60,13 @@ class TestPostManagement:
     def test_get_post(self):
         """Test retrieving a post by ID"""
         post = store.create_post("Test post")
-        retrieved = store.get_post(post.id)
+        retrieved = store.posts.get(post.id)
         assert retrieved is not None
         assert retrieved.id == post.id
 
     def test_get_post_not_found(self):
         """Test retrieving a non-existent post"""
-        result = store.get_post("nonexistent-id")
+        result = store.posts.get("nonexistent-id")
         assert result is None
 
 
@@ -80,9 +80,9 @@ class TestThreadManagement:
     def test_get_thread(self):
         """Test retrieving a thread"""
         post = store.create_post("Test post for thread")
-        thread = store.get_thread(post.id)
+        thread = store.get_thread(post.thread_id)
         assert thread is not None
-        assert thread["id"] == post.id
+        assert thread.root_post.id == post.id
 
     def test_get_thread_not_found(self):
         """Test retrieving a non-existent thread"""
@@ -94,8 +94,8 @@ class TestThreadManagement:
         post = store.create_post("Root post")
         thread = store.get_thread(post.id)
         assert thread is not None
-        assert "root_post" in thread
-        assert thread["root_post"].id == post.id
+        assert hasattr(thread, "root_post")
+        assert thread.root_post.id == post.id
 
 
 # =============================================================================
@@ -116,12 +116,12 @@ class TestTimeline:
         assert len(posts) <= 5
 
     def test_timeline_ordering(self):
-        """Test that timeline is ordered by timestamp"""
+        """Test that timeline is ordered by created_at"""
         posts = store.get_timeline_posts(50)
         # Check that posts are in reverse chronological order
         if len(posts) > 1:
             for i in range(len(posts) - 1):
-                assert posts[i].timestamp >= posts[i+1].timestamp
+                assert posts[i].created_at >= posts[i+1].created_at
 
 
 # =============================================================================
@@ -157,5 +157,5 @@ class TestUser:
         """Test that current user has required fields"""
         user = store.current_user
         assert hasattr(user, "id")
-        assert hasattr(user, "username")
+        assert hasattr(user, "handle")
         assert hasattr(user, "display_name")

@@ -14,7 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from main import app
 from store import store
-from agents import load_agents, reload_agents
+from agents import reload_agents
 from models import Agent, Post, User
 
 

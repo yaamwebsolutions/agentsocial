@@ -41,10 +41,6 @@ class TestLLMService:
         """Test LLM response with mock agent"""
         from services.llm_service import generate_agent_response
 
-        # Create a mock agent with mock_responses
-        class MockAgent:
-            mock_responses = ["Mock response: {context}"]
-
         response = await generate_agent_response(
             agent_name="Test",
             agent_role="Test role",
@@ -52,7 +48,6 @@ class TestLLMService:
             agent_policy="Test policy",
             user_message="Hello",
             thread_history=[],
-            agent=MockAgent()
         )
 
         assert response is not None

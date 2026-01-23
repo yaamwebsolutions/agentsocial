@@ -9,7 +9,7 @@
 import pytest
 import json
 from pathlib import Path
-from agents import load_agents, list_agents, get_agent, Agent
+from agents import list_agents, get_agent, Agent
 
 
 # =============================================================================
@@ -21,7 +21,7 @@ class TestAgentLoading:
 
     def test_load_agents_from_file(self):
         """Test loading agents from agents.json"""
-        agents = load_agents()
+        agents = list_agents()
         assert agents is not None
         assert isinstance(agents, list)
 
@@ -129,14 +129,12 @@ class TestAgentFiltering:
     """Tests for filtering agents by various criteria"""
 
     def test_list_enabled_agents_only(self):
-        """Test listing only enabled agents"""
+        """Test listing agents - all agents are returned"""
         agents = list_agents()
         if agents:
-            # If agents have an 'enabled' field
-            enabled = [a for a in agents
-                      if (not hasattr(a, "enabled") or a.enabled) if hasattr(a, "enabled")
-                      else a.get("enabled", True)]
-            assert isinstance(enabled, list)
+            # Agent model doesn't have an 'enabled' field, all agents are active
+            assert isinstance(agents, list)
+            assert len(agents) > 0
 
     def test_get_agent_by_tool(self):
         """Test finding agents that have a specific tool"""
@@ -144,11 +142,7 @@ class TestAgentFiltering:
         if agents:
             # Find agents with web_search tool
             tool_name = "web_search"
-            agents_with_tool = []
-            for agent in agents:
-                tools = agent.tools if hasattr(agent, "tools") else agent.get("tools", [])
-                if tool_name in tools:
-                    agents_with_tool.append(agent)
+            agents_with_tool = [a for a in agents if tool_name in a.tools]
             # At least grok should have this
             assert len(agents_with_tool) >= 0
 

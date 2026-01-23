@@ -107,7 +107,6 @@ Supported agents include:
 ### Configuration
 Agents are configured via `backend/agents.json`. See the [GitHub repo](https://github.com/yourusername/agent-twitter) for details.
 """,
-    version=APP_VERSION,
     terms_of_service="https://github.com/yourusername/agent-twitter/blob/main/CODE_OF_CONDUCT.md",
     contact={
         "name": "Agent Twitter Contributors",
