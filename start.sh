@@ -61,7 +61,7 @@ elif [ -d "packages" ]; then
 fi
 
 # Start backend in background using uvicorn directly
-PYTHONPATH="${PYTHONPATH}:$(pwd)" python -m uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000} &
+PYTHONPATH="${PYTHONPATH}:$(pwd)" python3 -m uvicorn main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000} &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
