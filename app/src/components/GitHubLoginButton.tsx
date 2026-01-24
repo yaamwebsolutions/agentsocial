@@ -24,7 +24,7 @@ export function GitHubLoginButton({
   fullWidth = false,
 }: GitHubLoginButtonProps) {
   const [loading, setLoading] = useState(false);
-  const navigate = navigate();
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     setLoading(true);

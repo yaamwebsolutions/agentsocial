@@ -2,7 +2,7 @@
 Agent Twitter API - FastAPI Backend
 Main application with environment-based configuration.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional

@@ -226,9 +226,9 @@ export interface RepoStats {
   growth_30d: number;
   growth_90d: number;
   star_velocity: {
-    1d: number;
-    7d: number;
-    30d: number;
+    "1d": number;
+    "7d": number;
+    "30d": number;
   };
   percentiles: {
     stars: number;    // percentile among all tracked repos
