@@ -13,6 +13,7 @@ from models import (
     Thread, TimelinePost, Agent, CreatePostRequest,
     CreatePostResponse, User
 )
+from middleware.auth_middleware import get_current_user
 from agents import list_agents, get_agent
 from store import store
 from orchestrator import orchestrator
@@ -72,6 +73,10 @@ tags_metadata = [
     {
         "name": "Health",
         "description": "Health check and system status",
+    },
+    {
+        "name": "Authentication",
+        "description": "GitHub OAuth login and user session management",
     },
 ]
 
@@ -589,6 +594,101 @@ async def monitoring_status():
         "counters_count": len(monitoring.registry._counters),
         "gauges_count": len(monitoring.registry._gauges),
     }
+
+
+# =============================================================================
+# AUTHENTICATION ENDPOINTS
+# =============================================================================
+
+@app.get("/auth/github/login", tags=["Authentication"])
+async def github_login():
+    """
+    Redirect to GitHub OAuth page.
+
+    Initiates the GitHub OAuth flow by redirecting the user to GitHub's
+    authorization page. The user will be redirected back to the callback URL
+    after authorization.
+
+    Returns a redirect response to GitHub OAuth.
+    """
+    from services.auth_service import get_auth_service
+    auth_service = get_auth_service()
+
+    # Generate state for CSRF protection
+    import secrets
+    state = secrets.token_urlsafe(16)
+
+    auth_url = auth_service.get_github_auth_url(state)
+
+    return {
+        "auth_url": auth_url,
+        "state": state
+    }
+
+
+@app.get("/auth/github/callback", tags=["Authentication"])
+async def github_callback(code: str, state: str):
+    """
+    Handle GitHub OAuth callback.
+
+    Exchanges the authorization code for an access token and retrieves
+    the user's GitHub profile. Creates a session and returns a JWT token.
+
+    Args:
+        code: Authorization code from GitHub
+        state: State parameter for CSRF validation
+
+    Returns:
+        Dictionary with access_token and user information
+    """
+    from services.auth_service import get_auth_service
+    auth_service = get_auth_service()
+
+    try:
+        # Exchange code for access token
+        token_response = await auth_service.exchange_code_for_token(code, state)
+
+        # Get user profile from GitHub
+        github_user = await auth_service.get_github_user(token_response.access_token)
+
+        # Create user session and JWT
+        access_token, auth_user = auth_service.create_user_session(github_user)
+
+        return {
+            "access_token": access_token,
+            "user": auth_user.dict()
+        }
+
+    except Exception as e:
+        logger.error(f"GitHub OAuth error: {e}")
+        raise HTTPException(status_code=400, detail=f"OAuth failed: {str(e)}")
+
+
+@app.post("/auth/logout", tags=["Authentication"])
+async def logout():
+    """
+    Logout user and clear session.
+
+    In a stateless JWT setup, the client should simply discard the token.
+    This endpoint can be expanded to invalidate tokens in a refresh token setup.
+    """
+    return {"message": "Logged out successfully"}
+
+
+@app.get("/auth/me", tags=["Authentication"])
+async def get_authenticated_user(
+    payload: dict = Depends(get_current_user)
+):
+    """
+    Get currently authenticated user.
+
+    Requires valid JWT token in Authorization header.
+    Returns the user profile information.
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    return payload
 
 
 # =============================================================================

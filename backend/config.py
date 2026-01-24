@@ -3,6 +3,7 @@ Application configuration loaded from environment variables.
 Automatically loads .env file from project root.
 """
 import os
+import secrets
 from typing import List, Optional
 from pathlib import Path
 
@@ -131,6 +132,29 @@ YAAM_ENABLED = bool(YAAM_API_URL)
 
 
 # =============================================================================
+# GITHUB OAUTH & API
+# =============================================================================
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+GITHUB_OAUTH_CALLBACK_URL = os.getenv("GITHUB_OAUTH_CALLBACK_URL", "https://api.yaam.click/auth/github/callback")
+GITHUB_OAUTH_SCOPE = os.getenv("GITHUB_OAUTH_SCOPE", "read:user user:email repo")
+GITHUB_ENABLED = bool(GITHUB_TOKEN or (GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET))
+
+# =============================================================================
+# JWT AUTHENTICATION
+# =============================================================================
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60480"))  # 7 days
+
+# =============================================================================
+# REDIS (for caching)
+# =============================================================================
+REDIS_URL = os.getenv("REDIS_URL", "")
+REDIS_ENABLED = bool(REDIS_URL)
+
+# =============================================================================
 # AGENT CONFIG
 # =============================================================================
 AGENT_TIMEOUT = int(os.getenv("AGENT_TIMEOUT", "30"))
@@ -164,6 +188,8 @@ def print_config():
     print(f"Resend Email: {'ENABLED' if RESEND_ENABLED else 'DISABLED'}")
     print(f"Supabase: {'ENABLED' if SUPABASE_ENABLED else 'DISABLED'}")
     print(f"Yaam.ai: {'ENABLED' if YAAM_ENABLED else 'DISABLED'}")
+    print(f"GitHub API: {'ENABLED' if GITHUB_ENABLED else 'DISABLED'}")
+    print(f"Redis: {'ENABLED' if REDIS_ENABLED else 'DISABLED'}")
     print("=" * 40)
 
 
