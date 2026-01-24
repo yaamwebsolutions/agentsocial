@@ -1,13 +1,8 @@
-[phases.setup]
-nixPkgs = ["python312", "gcc"]
-
 [phases.build]
-cmds = ["cd backend && pip install --no-cache-dir -r requirements.txt"]
+cmds = ["cd backend && python3 -m pip install --no-cache-dir -r requirements.txt"]
+
+[phases.start]
+cmd = "cd backend && python3 -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
 
 [start]
-cmd = "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
-
-[static]
-# Set the backend directory as root
-host = "0.0.0.0"
-port = 8000
+cmd = "cd backend && python3 -m uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
