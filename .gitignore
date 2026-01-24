@@ -9,11 +9,15 @@ __pycache__/
 .venv/
 .mypy_cache/
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # Environment files
 .env
 .env.local
 .env.*.local
+.env.vercel
 
 # Node
 node_modules/
@@ -27,3 +31,4 @@ app/dist/
 
 # Misc
 backend/packages/
+notetoself
