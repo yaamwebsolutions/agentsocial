@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Palette, Bell, Shield, Github, Star, Share2, Trash2, Download, Moon, Sun, Monitor, Check, Link2, Heart } from "lucide-react";
+import { ArrowLeft, User, Palette, Bell, Shield, Github, Star, Share2, Trash2, Download, Moon, Sun, Monitor, Link2, Heart } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useApi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,13 +44,16 @@ interface ToggleProps {
 function Toggle({ enabled, onChange, label, description }: ToggleProps) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
-      <div>
+      <div className="flex-1">
         <div className="font-medium text-foreground">{label}</div>
         {description && <div className="text-sm text-muted-foreground">{description}</div>}
       </div>
       <button
+        type="button"
         onClick={() => onChange(!enabled)}
-        className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+        aria-pressed={enabled ? "true" : "false"}
+        aria-label={`Toggle ${label.toLowerCase()}`}
+        className={`relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 ${
           enabled ? "bg-primary" : "bg-muted"
         }`}
       >
@@ -58,9 +61,7 @@ function Toggle({ enabled, onChange, label, description }: ToggleProps) {
           className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all duration-300 ${
             enabled ? "left-8" : "left-1"
           }`}
-        >
-          {enabled && <Check className="w-3 h-3 text-primary mt-1 ml-1" />}
-        </div>
+        />
       </button>
     </div>
   );
