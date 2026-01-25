@@ -6,6 +6,15 @@ export interface User {
   id: string;
   display_name: string;
   handle: string;
+  avatar_url?: string;
+  bio?: string;
+}
+
+export interface UserStats {
+  user_id: string;
+  post_count: number;
+  like_count: number;
+  reply_count: number;
 }
 
 export interface Agent {
@@ -31,6 +40,8 @@ export interface Post {
   thread_id: string;
   mentions: string[];
   meta: Record<string, any>;
+  like_count: number;
+  is_liked: boolean;
 }
 
 export interface TimelinePost extends Post {

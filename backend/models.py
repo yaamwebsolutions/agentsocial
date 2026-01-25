@@ -29,6 +29,15 @@ class User(BaseModel):
     id: str
     display_name: str
     handle: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+
+
+class UserStats(BaseModel):
+    user_id: str
+    post_count: int
+    like_count: int
+    reply_count: int
 
 class Post(BaseModel):
     id: str
@@ -40,6 +49,8 @@ class Post(BaseModel):
     thread_id: str
     mentions: List[str] = Field(default_factory=list)
     meta: Dict[str, Any] = Field(default_factory=dict)
+    like_count: int = 0
+    is_liked: bool = False
 
 class AgentRun(BaseModel):
     id: str

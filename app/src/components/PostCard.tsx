@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Clock, Bot, Loader2, Sparkles } from "lucide-react";
+import { MessageCircle, Clock, Bot, Loader2, Sparkles, Heart, Trash2 } from "lucide-react";
 import type { Post, TimelinePost, AgentRun } from "@/types/api";
+import { likePost, unlikePost, deletePost } from "@/hooks/useApi";
 import { useAgents } from "@/hooks/useApi";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 
 interface PostCardProps {
@@ -13,12 +16,27 @@ interface PostCardProps {
   isReply?: boolean;
   agentRuns?: AgentRun[];
   showThread?: boolean;
+  onLike?: (postId: string, newLikeState: boolean) => void;
+  onDelete?: (postId: string) => void;
 }
 
-export function PostCard({ post, isReply = false, agentRuns = [], showThread = true }: PostCardProps) {
+export function PostCard({
+  post,
+  isReply = false,
+  agentRuns = [],
+  showThread = true,
+  onLike,
+  onDelete
+}: PostCardProps) {
   const navigate = useNavigate();
   const { agents } = useAgents();
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
+
+  const [isLiked, setIsLiked] = useState(post.is_liked || false);
+  const [likeCount, setLikeCount] = useState(post.like_count || 0);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const isAgent = post.author_type === "agent";
   const timelinePost = post as TimelinePost;
@@ -42,6 +60,45 @@ export function PostCard({ post, isReply = false, agentRuns = [], showThread = t
     if (hours < 24) return `${hours}h`;
     if (days < 7) return `${days}d`;
     return date.toLocaleDateString();
+  };
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated || isLiking) return;
+
+    setIsLiking(true);
+    try {
+      if (isLiked) {
+        const result = await unlikePost(post.id);
+        setIsLiked(result.is_liked);
+        setLikeCount(result.like_count);
+      } else {
+        const result = await likePost(post.id);
+        setIsLiked(result.is_liked);
+        setLikeCount(result.like_count);
+      }
+      onLike?.(post.id, !isLiked);
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated || isDeleting) return;
+
+    if (!confirm("Are you sure you want to delete this post?")) return;
+
+    setIsDeleting(true);
+    try {
+      await deletePost(post.id);
+      onDelete?.(post.id);
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      setIsDeleting(false);
+    }
   };
 
   // Get agent gradient
@@ -250,22 +307,49 @@ export function PostCard({ post, isReply = false, agentRuns = [], showThread = t
             )}
 
             {/* Actions */}
-            {!isReply && (
-              <div className="flex items-center gap-2 mt-4">
+            <div className="flex items-center gap-2 mt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-primary gap-2 rounded-full px-4 h-9 transition-all hover:bg-primary/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isReply && showThread) {
+                    navigate(`/thread/${post.id}`);
+                  }
+                }}
+              >
+                <MessageCircle className="w-4 h-4" />
+                {hasReplies ? <span className="font-medium">{timelinePost.reply_count}</span> : <span>Reply</span>}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 rounded-full px-4 h-9 transition-all ${
+                  isLiked
+                    ? "text-red-500 hover:text-red-600 hover:bg-red-50"
+                    : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                }`}
+                onClick={handleLike}
+                disabled={isLiking || !isAuthenticated}
+              >
+                <Heart className={`w-4 h-4 transition-transform ${isLiked ? "fill-current scale-110" : ""} ${isLiking ? "animate-pulse" : ""}`} />
+                <span className="font-medium">{likeCount}</span>
+              </Button>
+
+              {!isAgent && isAuthenticated && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground hover:text-primary gap-2 rounded-full px-4 h-9 transition-all hover:bg-primary/10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/thread/${post.id}`);
-                  }}
+                  className="text-muted-foreground hover:text-destructive gap-2 rounded-full px-3 h-9 transition-all hover:bg-destructive/10"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  {hasReplies ? <span className="font-medium">{timelinePost.reply_count}</span> : <span>Reply</span>}
+                  <Trash2 className={`w-4 h-4 ${isDeleting ? "animate-pulse" : ""}`} />
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

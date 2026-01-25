@@ -4,6 +4,7 @@ import { HomePage } from "@/pages/HomePage";
 import { AgentsPage } from "@/pages/AgentsPage";
 import { ThreadView } from "@/components/ThreadView";
 import { CallbackPage } from "@/pages/CallbackPage";
+import { ProfilePage } from "@/pages/ProfilePage";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -23,6 +24,7 @@ function App() {
                   <Route path="/agents" element={<AgentsPage />} />
                   <Route path="/thread/:threadId" element={<ThreadView />} />
                   <Route path="/callback" element={<CallbackPage />} />
+                  <Route path="/profile/:userId" element={<ProfilePage />} />
                 </Routes>
               </main>
               <Toaster />

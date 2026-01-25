@@ -6,7 +6,9 @@ import type {
   CreatePostRequest,
   CreatePostResponse,
   User,
+  UserStats,
   AgentRun,
+  Post,
 } from "@/types/api";
 
 const API_BASE =
@@ -162,4 +164,78 @@ export function useThreadAgentRuns(threadId: string) {
   }, [threadId, refetch]);
 
   return { runs, loading, refetch };
+}
+
+// Like/Unlike
+export async function likePost(postId: string): Promise<{
+  liked: boolean;
+  like_count: number;
+  is_liked: boolean;
+}> {
+  return apiCall(`/posts/${postId}/like`, {
+    method: "POST",
+  });
+}
+
+export async function unlikePost(postId: string): Promise<{
+  unliked: boolean;
+  like_count: number;
+  is_liked: boolean;
+}> {
+  return apiCall(`/posts/${postId}/unlike`, {
+    method: "POST",
+  });
+}
+
+// Delete Post
+export async function deletePost(postId: string): Promise<{ message: string }> {
+  return apiCall(`/posts/${postId}`, {
+    method: "DELETE",
+  });
+}
+
+// User Stats
+export function useUserStats(userId: string) {
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    apiCall<UserStats>(`/users/${userId}/stats`)
+      .then(setStats)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      refetch();
+    }
+  }, [userId, refetch]);
+
+  return { stats, loading, error, refetch };
+}
+
+// User Posts
+export function useUserPosts(userId: string, limit: number = 50) {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    apiCall<Post[]>(`/users/${userId}/posts?limit=${limit}`)
+      .then(setPosts)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [userId, limit]);
+
+  useEffect(() => {
+    if (userId) {
+      refetch();
+    }
+  }, [userId, limit, refetch]);
+
+  return { posts, loading, error, refetch };
 }

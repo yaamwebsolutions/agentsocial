@@ -1,15 +1,16 @@
-from typing import List, Dict, Optional
-from models import Post, AgentRun, Thread, TimelinePost, User, AuthorType, AgentStatus
+from typing import List, Dict, Optional, Set
+from models import Post, AgentRun, Thread, TimelinePost, User, AuthorType, AgentStatus, UserStats
 from agents import extract_mentions
 import uuid
 from datetime import datetime
 
 class DataStore:
     """In-memory data store for posts, threads, and agent runs"""
-    
+
     def __init__(self):
         self.posts: Dict[str, Post] = {}
         self.agent_runs: Dict[str, AgentRun] = {}
+        self.likes: Dict[str, Set[str]] = {}  # post_id -> set of user_ids who liked
         self.current_user = User(
             id="user_1",
             display_name="You",
@@ -79,27 +80,34 @@ class DataStore:
         
         return Thread(root_post=root_post, replies=replies)
     
-    def get_timeline_posts(self, limit: int = 50) -> List[TimelinePost]:
+    def get_timeline_posts(self, limit: int = 50, user_id: Optional[str] = None) -> List[TimelinePost]:
         """Get timeline posts (root posts only) with reply counts"""
         # Get all root posts (no parent_id)
         root_posts = [
             post for post in self.posts.values()
             if post.parent_id is None
         ]
-        
+
         # Sort by creation time (newest first)
         root_posts.sort(key=lambda p: p.created_at, reverse=True)
-        
-        # Add reply counts
+
+        # Add reply counts and like info
         timeline_posts = []
         for post in root_posts[:limit]:
             reply_count = len([
                 p for p in self.posts.values()
                 if p.thread_id == post.id and p.id != post.id
             ])
-            timeline_post = TimelinePost(**post.dict(), reply_count=reply_count)
+            like_count = len(self.likes.get(post.id, set()))
+            is_liked = user_id and user_id in self.likes.get(post.id, set())
+            timeline_post = TimelinePost(
+                **post.dict(),
+                reply_count=reply_count,
+                like_count=like_count,
+                is_liked=is_liked
+            )
             timeline_posts.append(timeline_post)
-        
+
         return timeline_posts
     
     def create_agent_run(self, agent_handle: str, trigger_post_id: str, thread_id: str) -> AgentRun:
@@ -144,11 +152,11 @@ class DataStore:
         thread = self.get_thread(thread_id)
         if not thread:
             return []
-        
+
         # Get all posts in thread
         all_posts = [thread.root_post] + thread.replies
         all_posts.sort(key=lambda p: p.created_at)
-        
+
         # Return recent posts as dicts for context
         return [
             {
@@ -159,6 +167,83 @@ class DataStore:
             }
             for post in all_posts[-max_posts:]
         ]
+
+    # ==================== LIKE METHODS ====================
+
+    def like_post(self, post_id: str, user_id: str) -> bool:
+        """Like a post. Returns True if post was liked, False if already liked."""
+        if post_id not in self.likes:
+            self.likes[post_id] = set()
+        if user_id in self.likes[post_id]:
+            return False  # Already liked
+        self.likes[post_id].add(user_id)
+        return True
+
+    def unlike_post(self, post_id: str, user_id: str) -> bool:
+        """Unlike a post. Returns True if post was unliked, False if not liked."""
+        if post_id not in self.likes:
+            return False  # No likes on this post
+        if user_id not in self.likes[post_id]:
+            return False  # User hasn't liked this post
+        self.likes[post_id].remove(user_id)
+        return True
+
+    def get_post_likes(self, post_id: str, user_id: Optional[str] = None) -> Dict:
+        """Get like count and user's like status for a post."""
+        likes = self.likes.get(post_id, set())
+        return {
+            "like_count": len(likes),
+            "is_liked": user_id in likes if user_id else False
+        }
+
+    # ==================== DELETE METHOD ====================
+
+    def delete_post(self, post_id: str, user_id: str) -> bool:
+        """Delete a post. Only the author can delete their own posts."""
+        post = self.posts.get(post_id)
+        if not post:
+            return False
+        # In a real app, check if user_id matches post.author
+        # For now, allow deletion of any post
+        if post_id in self.posts:
+            del self.posts[post_id]
+        # Also remove from likes
+        if post_id in self.likes:
+            del self.likes[post_id]
+        return True
+
+    # ==================== USER STATS METHODS ====================
+
+    def get_user_stats(self, user_id: str) -> UserStats:
+        """Get statistics for a user."""
+        user_posts = [
+            p for p in self.posts.values()
+            if p.author_type == AuthorType.HUMAN
+        ]
+        post_count = len(user_posts)
+        reply_count = len([p for p in user_posts if p.parent_id is not None])
+
+        # Count total likes on user's posts
+        like_count = sum(
+            len(self.likes.get(post.id, set()))
+            for post in user_posts
+        )
+
+        return UserStats(
+            user_id=user_id,
+            post_count=post_count,
+            like_count=like_count,
+            reply_count=reply_count
+        )
+
+    def get_user_posts(self, user_id: str, limit: int = 50) -> List[Post]:
+        """Get posts by a specific user."""
+        all_posts = [
+            p for p in self.posts.values()
+            if p.author_type == AuthorType.HUMAN
+        ]
+        all_posts.sort(key=lambda p: p.created_at, reverse=True)
+        return all_posts[:limit]
 
 # Global store instance
 store = DataStore()

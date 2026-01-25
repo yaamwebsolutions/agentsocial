@@ -12,7 +12,7 @@ import jwt
 
 from models import (
     Thread, TimelinePost, Agent, CreatePostRequest,
-    CreatePostResponse, User
+    CreatePostResponse, User, UserStats
 )
 from middleware.auth_middleware import get_current_user, get_optional_user
 from agents import list_agents, get_agent
@@ -255,14 +255,79 @@ async def get_thread(thread_id: str):
 
 
 @app.get("/timeline", response_model=List[TimelinePost], tags=["Posts"])
-async def get_timeline(limit: int = 50):
+async def get_timeline(limit: int = 50, _user: Optional[dict] = Depends(get_optional_user)):
     """
     Get timeline posts (root posts only).
 
     Returns the most recent posts in reverse chronological order.
     Use the limit parameter to control the number of results.
     """
-    return store.get_timeline_posts(limit)
+    user_id = _user.get("sub") if _user else None
+    return store.get_timeline_posts(limit, user_id)
+
+
+@app.post("/posts/{post_id}/like", tags=["Posts"])
+async def like_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+    """
+    Like a post.
+
+    Toggles a like on the specified post. Returns the updated like count and status.
+    Requires authentication.
+    """
+    if not _user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id = _user.get("sub", "user_1")
+    liked = store.like_post(post_id, user_id)
+    like_info = store.get_post_likes(post_id, user_id)
+
+    return {
+        "liked": liked,
+        "like_count": like_info["like_count"],
+        "is_liked": like_info["is_liked"]
+    }
+
+
+@app.post("/posts/{post_id}/unlike", tags=["Posts"])
+async def unlike_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+    """
+    Unlike a post.
+
+    Removes a like from the specified post. Returns the updated like count and status.
+    Requires authentication.
+    """
+    if not _user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id = _user.get("sub", "user_1")
+    unliked = store.unlike_post(post_id, user_id)
+    like_info = store.get_post_likes(post_id, user_id)
+
+    return {
+        "unliked": unliked,
+        "like_count": like_info["like_count"],
+        "is_liked": like_info["is_liked"]
+    }
+
+
+@app.delete("/posts/{post_id}", tags=["Posts"])
+async def delete_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+    """
+    Delete a post.
+
+    Permanently deletes the specified post. Only the post author can delete their posts.
+    Requires authentication.
+    """
+    if not _user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id = _user.get("sub", "user_1")
+    success = store.delete_post(post_id, user_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    return {"message": "Post deleted successfully"}
 
 
 # =============================================================================
@@ -492,13 +557,33 @@ async def send_email(request: EmailSendRequest):
 # =============================================================================
 
 @app.get("/me", response_model=User, tags=["Users"])
-async def get_current_user():
+async def get_current_app_user():
     """
     Get current user info.
 
     Returns the profile information for the authenticated user.
     """
     return store.current_user
+
+
+@app.get("/users/{user_id}/stats", response_model=UserStats, tags=["Users"])
+async def get_user_stats(user_id: str):
+    """
+    Get user statistics.
+
+    Returns post count, like count, and reply count for the specified user.
+    """
+    return store.get_user_stats(user_id)
+
+
+@app.get("/users/{user_id}/posts", tags=["Users"])
+async def get_user_posts(user_id: str, limit: int = 50):
+    """
+    Get posts by a specific user.
+
+    Returns the most recent posts created by the specified user.
+    """
+    return store.get_user_posts(user_id, limit)
 
 
 # =============================================================================
