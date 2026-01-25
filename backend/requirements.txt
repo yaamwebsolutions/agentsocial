@@ -1,0 +1,49 @@
+# Agent Twitter Backend Requirements
+# Install with: pip install -r requirements.txt
+
+# Core Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# HTTP Client
+httpx>=0.25.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# System Monitoring
+psutil>=5.9.0
+
+# Database (Optional - for PostgreSQL support)
+# sqlalchemy>=2.0.0
+# psycopg2-binary>=2.9.0
+# alembic>=1.12.0
+
+# =============================================================================
+# GITHUB & AUTHENTICATION
+# =============================================================================
+PyJWT>=2.8.0
+PyJWT[crypto]>=2.8.0
+
+# =============================================================================
+# CACHE (Optional)
+# =============================================================================
+# redis>=5.0.0
+
+# =============================================================================
+# Testing & Development
+# =============================================================================
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.25.0
+
+# Code Quality
+ruff>=0.1.0
+mypy>=1.7.0
+black>=23.0.0
+
+# Type Stubs
+types-requests>=2.31.0

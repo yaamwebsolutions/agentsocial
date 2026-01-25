@@ -1,0 +1,42 @@
+services:
+  # Web Service - Backend API
+  - type: web
+    name: agentsocial-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install --no-cache-dir -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: AgentTwitter
+      - key: APP_VERSION
+        value: 1.0.0
+      - key: BACKEND_LOG_LEVEL
+        value: INFO
+      - key: CORS_ORIGINS
+        value: *
+      - key: AGENT_TIMEOUT
+        value: 30
+      - key: MAX_THREAD_LENGTH
+        value: 100
+      - key: USE_REAL_LLM
+        value: false
+    # Link to PostgreSQL database
+    databases:
+      - name: agentsocial-db
+        databaseName: agent_twitter
+
+  # PostgreSQL Database
+  - type: pserv
+    name: agentsocial-db
+    region: oregon
+    plan: free
+    databaseName: agent_twitter
+    user: agent_twitter
+    maxconnections: 20
