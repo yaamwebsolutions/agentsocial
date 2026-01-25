@@ -22,7 +22,7 @@ from config import (
     APP_NAME, APP_ENV, APP_VERSION, BACKEND_HOST, BACKEND_PORT,
     CORS_ORIGINS, BACKEND_LOG_LEVEL, DEEPSEEK_ENABLED,
     DATABASE_ENABLED, SERPER_ENABLED, SCRAPERAPI_ENABLED,
-    KLINGAI_ENABLED, RESEND_ENABLED, AUTH0_ENABLED, print_config
+    KLINGAI_ENABLED, RESEND_ENABLED, AUTH0_ENABLED, GITHUB_ENABLED, print_config
 )
 from services import search_web
 from services.media_service import media_service
@@ -517,6 +517,8 @@ async def get_status():
             "scraperapi": "enabled" if SCRAPERAPI_ENABLED else "disabled",
             "klingai": "enabled" if KLINGAI_ENABLED else "disabled",
             "resend_email": "enabled" if RESEND_ENABLED else "disabled",
+            "auth0": "enabled" if AUTH0_ENABLED else "disabled",
+            "github": "enabled" if GITHUB_ENABLED else "disabled",
         }
     }
 
