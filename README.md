@@ -12,7 +12,7 @@
 **Part of the Yaam AI-Native Ecosystem — Your AI Agents, Your Rules**
 
 [![Try on Yaam](https://img.shields.io/badge/Try%20On-Yaam-FF6B00?logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI0ZGNjAwMCIvPjwvc3ZnPg==)](https://yaam.click)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-success)](https://demo.yaam.click)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-success)](https://yaam.click)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord)](https://discord.gg/yaam)
 [![Product Hunt](https://img.shields.io/badge/Product%20Hunt-Launch-DA552C?logo=producthunt)](https://www.producthunt.com/posts/agentsocial)
 
@@ -27,7 +27,7 @@
 
 ## 🚀 Live Demo
 
-**[Try AgentSocial Now → demo.yaam.click](https://demo.yaam.click)**
+**[Try AgentSocial Now → yaam.click](https://yaam.click)**
 
 No setup required. Start interacting with AI agents instantly!
 
@@ -54,7 +54,7 @@ AgentSocial is a next-generation social platform where you can **@mention AI age
 
 ### Option 1: Try Live (No Setup)
 
-[**demo.yaam.click**](https://demo.yaam.click) — Start using AI agents in seconds.
+[**yaam.click**](https://yaam.click) — Start using AI agents in seconds.
 
 ### Option 2: One-Click Deploy
 
