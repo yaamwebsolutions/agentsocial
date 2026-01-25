@@ -28,12 +28,10 @@ export function Header() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleCreatePost = (text: string) => {
-    // Scroll to composer and set text
     const composer = document.getElementById("composer-textarea") as HTMLTextAreaElement;
     if (composer) {
       composer.value = text;
       composer.focus();
-      // Trigger input event to update state
       composer.dispatchEvent(new Event("input", { bubbles: true }));
     }
   };
@@ -42,29 +40,29 @@ export function Header() {
     navigate(`/?search=${encodeURIComponent(query)}`);
   };
 
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-sm">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14">
             {/* Logo */}
             <div
               className="flex items-center gap-3 cursor-pointer group"
               onClick={() => navigate("/")}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
-                isGolden
-                  ? "bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 group-hover:shadow-amber-500/30"
-                  : "bg-gradient-to-br from-blue-400 to-blue-600 group-hover:shadow-blue-500/30"
-              } group-hover:scale-105 group-hover:shadow-lg`}>
-                <Bot className="w-6 h-6 text-white" />
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 ${
+                isDark
+                  ? "bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 shadow-amber-500/20"
+                  : "bg-gradient-to-br from-amber-500 via-yellow-500 to-amber-600 shadow-amber-500/30"
+              } group-hover:scale-105 group-hover:shadow-md`}>
+                <Bot className="w-5 h-5 text-white" />
               </div>
-              <span className={`font-bold text-xl hidden sm:block bg-gradient-to-r bg-clip-text text-transparent ${
-                isGolden
-                  ? "from-amber-400 via-yellow-400 to-amber-500"
-                  : "from-blue-400 to-purple-500"
+              <span className={`font-semibold text-lg hidden sm:block bg-gradient-to-r bg-clip-text text-transparent ${
+                isDark
+                  ? "from-amber-300 via-yellow-400 to-amber-400"
+                  : "from-amber-600 via-yellow-600 to-amber-700"
               }`}>
                 AgentTwitter
               </span>
@@ -80,24 +78,24 @@ export function Header() {
             </div>
 
             {/* Nav */}
-            <nav className="flex items-center gap-2">
+            <nav className="flex items-center gap-1">
               <Button
                 variant={location.pathname === "/" ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => navigate("/")}
-                className="rounded-full font-medium"
+                className="rounded-full h-8 px-3 text-xs font-medium"
               >
-                <Home className="w-4 h-4" />
-                <span className="hidden sm:inline ml-2">Home</span>
+                <Home className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline ml-1.5">Home</span>
               </Button>
               <Button
                 variant={location.pathname === "/agents" ? "secondary" : "ghost"}
                 size="sm"
                 onClick={() => navigate("/agents")}
-                className="rounded-full font-medium"
+                className="rounded-full h-8 px-3 text-xs font-medium"
               >
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline ml-2">Agents</span>
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline ml-1.5">Agents</span>
               </Button>
 
               {/* Theme Switcher */}
@@ -106,26 +104,26 @@ export function Header() {
               </div>
 
               {/* Auth Section - Desktop */}
-              <div className="hidden md:flex items-center gap-2 ml-1">
+              <div className="hidden md:flex items-center gap-1 ml-1">
                 <NotificationsDropdown />
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSettingsOpen(true)}
-                  className="rounded-full transition-all hover:scale-105"
+                  className="rounded-full h-8 w-8 p-0"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-3.5 h-3.5" />
                 </Button>
 
                 {/* User / Login */}
                 {!isLoading && isAuthenticated && user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="rounded-full p-1">
+                      <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={user.picture} alt={user.name || "User"} />
                           <AvatarFallback>
-                            <UserIcon className="h-4 w-4" />
+                            <UserIcon className="h-3.5 w-3.5" />
                           </AvatarFallback>
                         </Avatar>
                       </Button>
@@ -154,11 +152,11 @@ export function Header() {
               {/* Mobile Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="rounded-full md:hidden">
+                  <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0 md:hidden">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem onClick={() => navigate("/")}>
                     <Home className="w-4 h-4 mr-2" />
                     Home
@@ -175,7 +173,7 @@ export function Header() {
                   <DropdownMenuSeparator />
                   {isAuthenticated && user ? (
                     <>
-                      <div className="px-2 py-1.5 text-sm font-medium">
+                      <div className="px-2 py-1.5 text-xs font-medium">
                         {user.name || user.nickname}
                       </div>
                       <DropdownMenuItem onClick={() => logout()}>
