@@ -99,7 +99,7 @@ class DataStore:
                 if p.thread_id == post.id and p.id != post.id
             ])
             like_count = len(self.likes.get(post.id, set()))
-            is_liked = user_id and user_id in self.likes.get(post.id, set())
+            is_liked = bool(user_id and user_id in self.likes.get(post.id, set()))
             timeline_post = TimelinePost(
                 **post.dict(exclude={"like_count", "is_liked"}),
                 reply_count=reply_count,
