@@ -23,7 +23,7 @@ export function PostCard({ post, isReply = false, agentRuns = [], showThread = t
   const isAgent = post.author_type === "agent";
   const timelinePost = post as TimelinePost;
   const hasReplies = timelinePost.reply_count > 0;
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   // Find agent info
   const agentInfo = agents?.find((a) => a.handle === post.author_handle);
@@ -116,7 +116,7 @@ export function PostCard({ post, isReply = false, agentRuns = [], showThread = t
             ) : (
               <div className="relative group">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-300 group-hover:scale-105 ${
-                  isGolden
+                  isDark
                     ? "bg-gradient-to-br from-amber-400 to-yellow-600"
                     : "bg-gradient-to-br from-blue-400 to-blue-600"
                 }`}>

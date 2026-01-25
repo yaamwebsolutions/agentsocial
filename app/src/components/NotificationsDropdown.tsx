@@ -64,7 +64,7 @@ const mockNotifications: Notification[] = [
 
 export function NotificationsDropdown() {
   const { theme } = useTheme();
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [open, setOpen] = useState(false);
@@ -122,7 +122,7 @@ export function NotificationsDropdown() {
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
             <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center ${
-              isGolden
+              isDark
                 ? 'bg-amber-500 text-white'
                 : 'bg-blue-500 text-white'
             }`}>
@@ -178,7 +178,7 @@ export function NotificationsDropdown() {
                       </div>
                     ) : (
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isGolden ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'
+                        isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'
                       }`}>
                         <Sparkles className="w-4 h-4" />
                       </div>
@@ -191,7 +191,7 @@ export function NotificationsDropdown() {
                       <p className="font-medium text-sm truncate">{notification.title}</p>
                       {!notification.read && (
                         <div className={`w-2 h-2 rounded-full ${
-                          isGolden ? 'bg-amber-400' : 'bg-blue-400'
+                          isDark ? 'bg-amber-400' : 'bg-blue-400'
                         }`} />
                       )}
                     </div>

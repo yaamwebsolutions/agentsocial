@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/select";
 import {
   Settings as SettingsIcon,
+  Sun,
   Moon,
-  Sparkles,
   Bell,
   Palette,
   Monitor,
@@ -34,7 +34,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { theme, setTheme } = useTheme();
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   // Settings state
   const [notifications, setNotifications] = useState(true);
@@ -65,38 +65,38 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setTheme('blue')}
+                onClick={() => setTheme('light')}
                 className={`p-4 rounded-xl border-2 transition-all ${
-                  theme === 'blue'
-                    ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-border hover:border-blue-500/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                    <Moon className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium text-sm">Blue</p>
-                    <p className="text-xs text-muted-foreground">Classic tech</p>
-                  </div>
-                </div>
-              </button>
-              <button
-                onClick={() => setTheme('golden')}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  theme === 'golden'
+                  theme === "light"
                     ? 'border-amber-500 bg-amber-500/10'
                     : 'border-border hover:border-amber-500/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-white" />
+                    <Sun className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-sm">Golden</p>
-                    <p className="text-xs text-muted-foreground">Premium luxury</p>
+                    <p className="font-medium text-sm">Light</p>
+                    <p className="text-xs text-muted-foreground">Clean & bright</p>
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  theme === 'dark'
+                    ? 'border-amber-500 bg-amber-500/10'
+                    : 'border-border hover:border-amber-500/50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-600 to-yellow-500 flex items-center justify-center">
+                    <Moon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-sm">Dark</p>
+                    <p className="text-xs text-muted-foreground">Easy on eyes</p>
                   </div>
                 </div>
               </button>
@@ -214,7 +214,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <Button
             onClick={() => onOpenChange(false)}
             className={`rounded-full ${
-              isGolden
+              isDark
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
                 : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
             }`}

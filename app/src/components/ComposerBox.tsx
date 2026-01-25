@@ -60,7 +60,7 @@ export function ComposerBox({
   const [triggerChar, setTriggerChar] = useState<'@' | '/' | ':' | null>(null);
   const { agents } = useAgents();
   const { theme } = useTheme();
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   // Get current word before cursor
   const getCurrentWord = useCallback((text: string, cursorPos: number): { word: string; start: number } => {
@@ -242,7 +242,7 @@ export function ComposerBox({
           {/* Enhanced Avatar */}
           <div className="flex-shrink-0">
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg transition-all duration-300 ${
-              isGolden
+              isDark
                 ? "bg-gradient-to-br from-amber-400 to-yellow-600"
                 : "bg-gradient-to-br from-blue-400 to-blue-600"
             }`}>
@@ -325,7 +325,7 @@ export function ComposerBox({
                 type="submit"
                 disabled={!text.trim() || isSubmitting || text.length > 500}
                 className={`rounded-full px-8 font-semibold shadow-lg transition-all hover:scale-105 hover:shadow-xl ${
-                  isGolden
+                  isDark
                     ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-amber-500/30"
                     : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/30"
                 }`}

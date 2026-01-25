@@ -2,8 +2,8 @@
  * Auth0 Authentication Context
  * Manages Auth0 authentication state and provides login/logout functions.
  */
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Auth0User, Auth0Tokens } from "@/types/github";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import type { Auth0User } from "@/types/github";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "https://api.yaam.click";
 

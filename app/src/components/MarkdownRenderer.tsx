@@ -8,7 +8,7 @@ interface MarkdownRendererProps {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const { theme } = useTheme();
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   // Parse markdown and convert to React elements
   const renderMarkdown = (text: string): ReactNode[] => {
@@ -36,7 +36,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
               <span className="text-xs text-muted-foreground font-mono uppercase">{lang}</span>
             </div>
             <pre className={`p-4 rounded-b-lg overflow-x-auto ${
-              isGolden ? 'bg-amber-950/30' : 'bg-slate-950/50'
+              isDark ? 'bg-amber-950/30' : 'bg-slate-950/50'
             }`}>
               <code className="text-sm font-mono leading-relaxed">
                 {codeLines.join('\n')}
@@ -103,7 +103,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             {items.map((item, idx) => (
               <li key={idx} className="flex items-start gap-3">
                 <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full mt-2 ${
-                  isGolden ? 'bg-amber-400' : 'bg-blue-400'
+                  isDark ? 'bg-amber-400' : 'bg-blue-400'
                 }`} />
                 <span className="flex-1">{parseInline(item)}</span>
               </li>
@@ -128,7 +128,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
             {items.map((item, idx) => (
               <li key={idx} className="flex items-start gap-3">
                 <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                  isGolden ? 'bg-amber-500' : 'bg-blue-500'
+                  isDark ? 'bg-amber-500' : 'bg-blue-500'
                 }`}>
                   {idx + 1}
                 </span>
@@ -145,7 +145,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         const quoteText = trimmed.slice(1).trim();
         result.push(
           <blockquote key={`quote-${i}`} className={`my-4 p-4 border-l-4 rounded-r-lg italic ${
-            isGolden
+            isDark
               ? 'bg-amber-950/20 border-amber-500/50 text-amber-100'
               : 'bg-blue-950/20 border-blue-500/50 text-blue-100'
           }`}>
@@ -221,7 +221,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
         case 'code':
           parts.push(
             <code key={`code-${matchedStart}`} className={`px-1.5 py-0.5 rounded text-sm font-mono ${
-              isGolden ? 'bg-amber-950/50 text-amber-300' : 'bg-slate-800 text-blue-300'
+              isDark ? 'bg-amber-950/50 text-amber-300' : 'bg-slate-800 text-blue-300'
             }`}>
               {matchedText}
             </code>
@@ -267,7 +267,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
 // Compact version for inline text (mentions, etc.)
 export function InlineMarkdown({ content }: { content: string }) {
   const { theme } = useTheme();
-  const isGolden = theme === "golden";
+  const isDark = theme === "dark";
 
   const parseInline = (text: string): ReactNode => {
     // Split by markdown patterns
@@ -298,7 +298,7 @@ export function InlineMarkdown({ content }: { content: string }) {
       if (seg.startsWith('`') && seg.endsWith('`')) {
         return (
           <code key={idx} className={`px-1.5 py-0.5 rounded text-sm font-mono ${
-            isGolden ? 'bg-amber-950/50 text-amber-300' : 'bg-slate-800 text-blue-300'
+            isDark ? 'bg-amber-950/50 text-amber-300' : 'bg-slate-800 text-blue-300'
           }`}>
             {seg.slice(1, -1)}
           </code>

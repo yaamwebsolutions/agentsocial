@@ -6,7 +6,6 @@
 import { useState } from "react";
 import { Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -24,7 +23,6 @@ export function GitHubLoginButton({
   fullWidth = false,
 }: GitHubLoginButtonProps) {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleLogin = async () => {
     setLoading(true);

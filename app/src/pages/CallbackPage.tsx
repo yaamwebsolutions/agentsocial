@@ -3,7 +3,6 @@
  * Handles the OAuth callback from Auth0
  */
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
