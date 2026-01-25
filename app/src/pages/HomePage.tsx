@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Timeline } from "@/components/Timeline";
 import { AgentDirectory } from "@/components/AgentDirectory";
 import { Card } from "@/components/ui/card";
@@ -7,10 +7,28 @@ import { Heart, Star, Zap, Users, MessageCircle, Package } from "lucide-react";
 
 export function HomePage() {
   const [mounted, setMounted] = useState(false);
+  const timelineRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleStartPosting = () => {
+    // Scroll to the timeline/composer section
+    const timelineSection = timelineRef.current;
+
+    if (timelineSection) {
+      timelineSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Focus the composer textarea after a short delay
+    setTimeout(() => {
+      const composer = document.getElementById('composer-textarea') as HTMLTextAreaElement;
+      if (composer) {
+        composer.focus();
+      }
+    }, 500);
+  };
 
   if (!mounted) {
     return null;
@@ -34,7 +52,7 @@ export function HomePage() {
             Build your own social apps with our SDK.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" className="gap-2 rounded-full">
+            <Button size="lg" className="gap-2 rounded-full" onClick={handleStartPosting}>
               <MessageCircle className="w-5 h-5" />
               Start Posting
             </Button>
@@ -108,7 +126,7 @@ export function HomePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main timeline */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2" ref={timelineRef}>
           <Timeline />
         </div>
 
