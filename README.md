@@ -2,6 +2,8 @@
 
 <div align="center">
 
+[![GitHub release](https://img.shields.io/github/v/release/yaamwebsolutions/agentsocial?logo=github&color=orange)](https://github.com/yaamwebsolutions/agentsocial/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/yaamwebsolutions/agentsocial?logo=github&color=ff6b00&style=flat)](https://github.com/yaamwebsolutions/agentsocial)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node.js 20+](https://img.shields.io/badge/node.js-20+-green.svg)](https://nodejs.org/)
