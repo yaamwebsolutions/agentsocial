@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import logging
 import uvicorn
+import jwt
 
 from models import (
     Thread, TimelinePost, Agent, CreatePostRequest,
@@ -21,7 +22,7 @@ from config import (
     APP_NAME, APP_ENV, APP_VERSION, BACKEND_HOST, BACKEND_PORT,
     CORS_ORIGINS, BACKEND_LOG_LEVEL, DEEPSEEK_ENABLED,
     DATABASE_ENABLED, SERPER_ENABLED, SCRAPERAPI_ENABLED,
-    KLINGAI_ENABLED, RESEND_ENABLED, print_config
+    KLINGAI_ENABLED, RESEND_ENABLED, AUTH0_ENABLED, print_config
 )
 from services import search_web
 from services.media_service import media_service
@@ -689,6 +690,153 @@ async def get_authenticated_user(
         HTTPException 401: If not authenticated
     """
     return payload
+
+
+# =============================================================================
+# AUTH0 ENDPOINTS
+# =============================================================================
+
+@app.get("/auth0/login", tags=["Authentication"])
+async def auth0_login(
+    redirect_uri: Optional[str] = None,
+    connection: Optional[str] = None,
+    state: Optional[str] = None
+):
+    """
+    Get Auth0 login URL.
+
+    Returns the Auth0 Universal Login URL that the user should be redirected to.
+    The frontend can handle the redirect, or use the URL directly.
+
+    Query Parameters:
+        redirect_uri: Where to redirect after login (defaults to frontend URL)
+        connection: Specific Auth0 connection (e.g., "github", "google")
+        state: CSRF protection parameter
+
+    Returns:
+        Dictionary with the login URL
+    """
+    from services.auth0_service import get_auth0_service
+    auth0_service = get_auth0_service()
+
+    if not auth0_service.enabled:
+        raise HTTPException(status_code=501, detail="Auth0 not configured")
+
+    # Use provided state or generate one
+    import secrets
+    final_state = state or secrets.token_urlsafe(16)
+
+    # Default redirect to frontend
+    if not redirect_uri:
+        redirect_uri = "https://yaam.click/callback"
+
+    login_url = auth0_service.get_login_url(
+        redirect_uri=redirect_uri,
+        state=final_state,
+        connection=connection
+    )
+
+    return {
+        "login_url": login_url,
+        "state": final_state
+    }
+
+
+@app.post("/auth0/callback", tags=["Authentication"])
+async def auth0_callback(request: dict):
+    """
+    Handle Auth0 OAuth callback.
+
+    Exchanges the authorization code for tokens and retrieves user info.
+
+    Request Body:
+        code: Authorization code from Auth0
+        redirect_uri: The redirect URI used in the login request
+
+    Returns:
+        Dictionary with access_token, id_token, and user information
+    """
+    from services.auth0_service import get_auth0_service
+    auth0_service = get_auth0_service()
+
+    if not auth0_service.enabled:
+        raise HTTPException(status_code=501, detail="Auth0 not configured")
+
+    code = request.get("code")
+    redirect_uri = request.get("redirect_uri", "https://yaam.click/callback")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+
+    # Exchange code for tokens
+    token_response = await auth0_service.exchange_code_for_token(code, redirect_uri)
+
+    if not token_response:
+        raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+
+    access_token = token_response.get("access_token")
+    id_token = token_response.get("id_token")
+
+    # Get user info
+    user_info = await auth0_service.get_user_info(access_token)
+
+    if not user_info:
+        # Decode id_token as fallback
+        user_info = jwt.decode(
+            id_token,
+            options={"verify_signature": False}
+        )
+
+    return {
+        "access_token": access_token,
+        "id_token": id_token,
+        "token_type": token_response.get("token_type", "Bearer"),
+        "expires_in": token_response.get("expires_in"),
+        "user": auth0_service.normalize_user(user_info)
+    }
+
+
+@app.get("/auth0/user", tags=["Authentication"])
+async def auth0_get_user(
+    payload: dict = Depends(get_current_user)
+):
+    """
+    Get Auth0 user info.
+
+    Requires valid Auth0 JWT. Returns the user profile information.
+    Can be used to refresh user data from Auth0.
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    return payload
+
+
+@app.get("/auth0/logout", tags=["Authentication"])
+async def auth0_logout(return_to: str = "https://yaam.click"):
+    """
+    Get Auth0 logout URL.
+
+    Returns the Auth0 logout URL that will log the user out of Auth0
+    and redirect back to your application.
+
+    Query Parameters:
+        return_to: Where to redirect after logout
+
+    Returns:
+        Dictionary with the logout URL
+    """
+    from services.auth0_service import get_auth0_service
+    auth0_service = get_auth0_service()
+
+    if not auth0_service.enabled:
+        raise HTTPException(status_code=501, detail="Auth0 not configured")
+
+    logout_url = auth0_service.get_logout_url(return_to=return_to)
+
+    return {
+        "logout_url": logout_url
+    }
 
 
 # =============================================================================

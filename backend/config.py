@@ -142,7 +142,16 @@ GITHUB_OAUTH_SCOPE = os.getenv("GITHUB_OAUTH_SCOPE", "read:user user:email repo"
 GITHUB_ENABLED = bool(GITHUB_TOKEN or (GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET))
 
 # =============================================================================
-# JWT AUTHENTICATION
+# AUTH0 AUTHENTICATION
+# =============================================================================
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "")
+AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID", "")
+AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET", "")
+AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE", "")  # API identifier
+AUTH0_ENABLED = bool(AUTH0_DOMAIN and AUTH0_CLIENT_ID)
+
+# =============================================================================
+# JWT AUTHENTICATION (fallback/internal)
 # =============================================================================
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -189,6 +198,7 @@ def print_config():
     print(f"Supabase: {'ENABLED' if SUPABASE_ENABLED else 'DISABLED'}")
     print(f"Yaam.ai: {'ENABLED' if YAAM_ENABLED else 'DISABLED'}")
     print(f"GitHub API: {'ENABLED' if GITHUB_ENABLED else 'DISABLED'}")
+    print(f"Auth0: {'ENABLED' if AUTH0_ENABLED else 'DISABLED'}")
     print(f"Redis: {'ENABLED' if REDIS_ENABLED else 'DISABLED'}")
     print("=" * 40)
 

@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Bot, Home, Users, Settings, MoreVertical } from "lucide-react";
+import { Bot, Home, Users, Settings, MoreVertical, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CommandPalette } from "./CommandPalette";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { SettingsModal } from "./SettingsModal";
+import { Auth0LoginButton } from "./Auth0LoginButton";
 import { useAgents } from "@/hooks/useApi";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +17,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { agents } = useAgents();
   const { theme } = useTheme();
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleCreatePost = (text: string) => {
@@ -101,8 +105,8 @@ export function Header() {
                 <ThemeSwitcher />
               </div>
 
-              {/* Notifications & Settings - Desktop */}
-              <div className="hidden md:flex items-center gap-1 ml-1">
+              {/* Auth Section - Desktop */}
+              <div className="hidden md:flex items-center gap-2 ml-1">
                 <NotificationsDropdown />
                 <Button
                   variant="ghost"
@@ -112,6 +116,39 @@ export function Header() {
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
+
+                {/* User / Login */}
+                {!isLoading && isAuthenticated && user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="rounded-full p-1">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.picture} alt={user.name || "User"} />
+                          <AvatarFallback>
+                            <UserIcon className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <div className="px-2 py-1.5 text-sm font-medium">
+                        {user.name || user.nickname}
+                      </div>
+                      <div className="px-2 py-1 text-xs text-muted-foreground">
+                        {user.email}
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => logout()}>
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : !isLoading ? (
+                  <Auth0LoginButton size="sm" variant="default">
+                    Sign In
+                  </Auth0LoginButton>
+                ) : null}
               </div>
 
               {/* Mobile Menu */}
@@ -135,6 +172,23 @@ export function Header() {
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {isAuthenticated && user ? (
+                    <>
+                      <div className="px-2 py-1.5 text-sm font-medium">
+                        {user.name || user.nickname}
+                      </div>
+                      <DropdownMenuItem onClick={() => logout()}>
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign out
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <DropdownMenuItem onClick={() => {/* Trigger login */}}>
+                      <UserIcon className="w-4 h-4 mr-2" />
+                      Sign In
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </nav>

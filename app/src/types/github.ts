@@ -1,6 +1,48 @@
 /**
- * GitHub-related type definitions for the AgentTwitter platform
+ * Authentication-related type definitions for the AgentTwitter platform
  */
+
+// =============================================================================
+// AUTH0 TYPES
+// =============================================================================
+
+export interface Auth0User {
+  sub: string;              // Auth0 user ID
+  user_id?: string;
+  email: string;
+  email_verified: boolean;
+  name: string;
+  nickname: string;
+  picture: string;
+  updated_at?: string;
+  auth0_id: string;
+  github_login?: string;
+  avatar_url?: string;
+}
+
+export interface Auth0Tokens {
+  access_token: string;
+  id_token: string;
+  token_type: string;
+  expires_in?: number;
+}
+
+export interface Auth0LoginResponse {
+  login_url: string;
+  state: string;
+}
+
+export interface Auth0CallbackResponse {
+  access_token: string;
+  id_token: string;
+  token_type: string;
+  expires_in?: number;
+  user: Auth0User;
+}
+
+// =============================================================================
+// GITHUB TYPES
+// =============================================================================
 
 // =============================================================================
 // ENUMS
