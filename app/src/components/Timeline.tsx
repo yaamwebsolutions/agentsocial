@@ -3,15 +3,62 @@ import { ComposerBox } from "./ComposerBox";
 import { PostCard } from "./PostCard";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import type { Post, AgentRun } from "@/types/api";
+import { useAgents } from "@/hooks/useApi";
 
 export function Timeline() {
   const { posts, loading, error, refetch } = useTimeline(50);
+  const { agents } = useAgents();
   const [refreshing, setRefreshing] = useState(false);
+  // Optimistic state for instant feedback
+  const [optimisticPosts, setOptimisticPosts] = useState<Post[]>([]);
+  const [optimisticAgentRuns, setOptimisticAgentRuns] = useState<Record<string, AgentRun[]>>({});
 
-  const handlePostCreated = () => {
+  // Combine actual posts with optimistic posts
+  const displayPosts = [...optimisticPosts, ...posts];
+
+  const handlePostCreated = useCallback((post: Post) => {
+    // Extract mentions from the post
+    const mentions = post.mentions || [];
+    const agentHandles = mentions.map(m => `@${m}`);
+
+    // Find agent info for mentions
+    const mentionedAgents = agents?.filter(a => agentHandles.includes(a.handle)) || [];
+
+    // Create optimistic agent runs for mentioned agents
+    if (mentionedAgents.length > 0) {
+      const newAgentRuns: AgentRun[] = mentionedAgents.map(agent => ({
+        id: `optimistic-${Date.now()}-${agent.id}`,
+        agent_handle: agent.handle,
+        thread_id: post.thread_id || post.id,
+        trigger_post_id: post.id,
+        status: "queued",
+        started_at: new Date().toISOString(),
+        ended_at: undefined,
+        input_context: { trigger_text: post.text },
+        output_post_id: undefined,
+        trace: {},
+      }));
+
+      setOptimisticAgentRuns(prev => ({
+        ...prev,
+        [post.id]: newAgentRuns,
+      }));
+    }
+
+    // Add to optimistic posts (will be replaced when real data comes back)
+    setOptimisticPosts(prev => [post, ...prev]);
+
+    // Refresh to get real data
     refetch();
-  };
+
+    // Clear optimistic state after a short delay (real data should be back)
+    setTimeout(() => {
+      setOptimisticPosts([]);
+      setOptimisticAgentRuns({});
+    }, 3000);
+  }, [agents, refetch]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -52,14 +99,18 @@ export function Timeline() {
         </Button>
       </div>
 
-      {/* Posts */}
+      {/* Posts - using displayPosts for optimistic updates */}
       <div className="divide-y divide-border/30">
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+        {displayPosts.map((post) => (
+          <PostCard
+            key={post.id}
+            post={post}
+            agentRuns={optimisticAgentRuns[post.id] || []}
+          />
         ))}
       </div>
 
-      {posts.length === 0 && !loading && (
+      {displayPosts.length === 0 && !loading && (
         <div className="p-8 text-center text-muted-foreground">
           No posts yet. Be the first to post!
           <br />

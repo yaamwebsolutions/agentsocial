@@ -61,7 +61,7 @@ async function apiCall<T>(
   return response.json();
 }
 
-// Posts
+// Posts with auto-refresh
 export function useTimeline(limit: number = 50) {
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +78,20 @@ export function useTimeline(limit: number = 50) {
   useEffect(() => {
     refetch();
   }, [refetch]);
+
+  // Auto-refresh timeline every 10 seconds for new posts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Silent refresh - don't show loading indicator
+      apiCall<TimelinePost[]>(`/timeline?limit=${limit}`)
+        .then(setPosts)
+        .catch(() => {
+          // Silently fail on auto-refresh
+        });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [limit]);
 
   return { posts, loading, error, refetch };
 }
@@ -100,6 +114,26 @@ export function useThread(threadId: string) {
       refetch();
     }
   }, [threadId, refetch]);
+
+  // Auto-poll thread when there are active agent runs
+  useEffect(() => {
+    if (!thread) return;
+
+    // Check if any post has active agent mentions
+    const allPosts = [thread.root_post, ...thread.replies];
+    const hasAgentMentions = allPosts.some((post) =>
+      post.mentions && post.mentions.length > 0
+    );
+
+    if (!hasAgentMentions) return;
+
+    // Poll every 3 seconds for thread updates when agents are involved
+    const interval = setInterval(() => {
+      refetch();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [thread, refetch]);
 
   return { thread, loading, error, refetch };
 }
@@ -145,7 +179,7 @@ export function useCurrentUser() {
   return { user, loading, error };
 }
 
-// Agent Runs
+// Agent Runs with auto-polling for active runs
 export function useThreadAgentRuns(threadId: string) {
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,6 +196,23 @@ export function useThreadAgentRuns(threadId: string) {
       refetch();
     }
   }, [threadId, refetch]);
+
+  // Auto-poll when there are active agent runs
+  useEffect(() => {
+    // Check if there are any active (queued or running) agent runs
+    const hasActiveRuns = runs.some(
+      (run) => run.status === "queued" || run.status === "running"
+    );
+
+    if (!hasActiveRuns) return;
+
+    // Poll every 2 seconds when there are active runs
+    const interval = setInterval(() => {
+      refetch();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [runs, refetch]);
 
   return { runs, loading, refetch };
 }

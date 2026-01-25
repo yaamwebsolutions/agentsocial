@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Clock, Bot, Loader2, Sparkles, Heart, Trash2 } from "lucide-react";
+import { MessageCircle, Clock, Bot, Sparkles, Heart, Trash2 } from "lucide-react";
 import type { Post, TimelinePost, AgentRun } from "@/types/api";
 import { likePost, unlikePost, deletePost } from "@/hooks/useApi";
 import { useAgents } from "@/hooks/useApi";
@@ -251,17 +251,22 @@ export function PostCard({
               </div>
             )}
 
-            {/* Agent runs status */}
+            {/* Agent runs status - Enhanced with typing animation */}
             {agentRuns.length > 0 && (
               <div className="mt-4 space-y-2">
                 {agentRuns.map((run) => {
                   const runAgent = agents?.find((a) => a.handle === run.agent_handle);
+                  const agentColor = runAgent?.color || "#3B82F6";
                   return (
                     <div
                       key={run.id}
-                      className="flex items-center gap-2 text-sm p-2.5 rounded-xl bg-muted/30 backdrop-blur-sm"
+                      className={`flex items-center gap-2 text-sm p-2.5 rounded-xl backdrop-blur-sm transition-all duration-300 ${
+                        run.status === "running"
+                          ? "bg-primary/5 border border-primary/30"
+                          : "bg-muted/30"
+                      }`}
                       style={{
-                        borderLeft: `3px solid ${runAgent?.color || "#3B82F6"}`,
+                        borderLeft: `3px solid ${agentColor}`,
                       }}
                     >
                       {run.status === "queued" && (
@@ -271,7 +276,7 @@ export function PostCard({
                             <div className="absolute inset-0 w-3 h-3 rounded-full bg-yellow-500 animate-ping opacity-50" />
                           </div>
                           <span className="text-muted-foreground">
-                            <span className="font-medium" style={{ color: runAgent?.color }}>
+                            <span className="font-medium" style={{ color: agentColor }}>
                               {runAgent?.name}
                             </span>{" "}
                             is thinking...
@@ -280,23 +285,41 @@ export function PostCard({
                       )}
                       {run.status === "running" && (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" style={{ color: runAgent?.color }} />
-                          <span className="text-muted-foreground">
-                            <span className="font-medium" style={{ color: runAgent?.color }}>
+                          {/* Typing animation - three bouncing dots */}
+                          <div className="flex items-center gap-0.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-[bounce_0.2s_infinite]" style={{ color: agentColor, animationDelay: "0ms" }} />
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-[bounce_0.2s_infinite]" style={{ color: agentColor, animationDelay: "0.15s" }} />
+                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-[bounce_0.2s_infinite]" style={{ color: agentColor, animationDelay: "0.3s" }} />
+                          </div>
+                          <span className="text-muted-foreground animate-pulse">
+                            <span className="font-medium" style={{ color: agentColor }}>
                               {runAgent?.name}
                             </span>{" "}
-                            is responding...
+                            is typing...
                           </span>
                         </>
                       )}
                       {run.status === "done" && (
                         <>
-                          <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
+                          <div className="flex items-center justify-center w-4 h-4">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                          </div>
                           <span className="text-muted-foreground">
-                            <span className="font-medium" style={{ color: runAgent?.color }}>
+                            <span className="font-medium" style={{ color: agentColor }}>
                               {runAgent?.name}
                             </span>{" "}
                             responded
+                          </span>
+                        </>
+                      )}
+                      {run.status === "error" && (
+                        <>
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          <span className="text-muted-foreground">
+                            <span className="font-medium" style={{ color: agentColor }}>
+                              {runAgent?.name}
+                            </span>{" "}
+                            failed
                           </span>
                         </>
                       )}
