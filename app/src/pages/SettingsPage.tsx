@@ -207,7 +207,7 @@ export function SettingsPage() {
               <div>
                 <h2 className="font-bold text-lg">Star us on GitHub!</h2>
                 <p className="text-sm text-muted-foreground">
-                  Help us grow. {githubStars.toLocaleString()} stars already!
+                  Help us grow. {githubStars.toLocaleString()} {githubStars === 1 ? "star" : "stars"} already!
                 </p>
               </div>
             </div>
@@ -314,7 +314,7 @@ export function SettingsPage() {
                   <button
                     key={value}
                     onClick={() => handleSetTheme(value)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
+                    className={`relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
                       theme === value
                         ? "bg-primary text-primary-foreground scale-105 shadow-lg"
                         : "bg-background hover:bg-muted"
