@@ -700,8 +700,8 @@ async def stream_thread_updates(thread_id: str):
                 # Send heartbeat every 5 seconds to keep connection alive
                 yield ": heartbeat\n\n"
 
-                # Wait before next check
-                await asyncio.sleep(1)
+                # Wait before next check (2 seconds to reduce load)
+                await asyncio.sleep(2)
 
         except asyncio.CancelledError:
             # Client disconnected

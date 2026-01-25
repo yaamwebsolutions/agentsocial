@@ -11,8 +11,8 @@ import type { AgentRun, Post } from "@/types/api";
 export function ThreadView() {
   const { threadId } = useParams<{ threadId: string }>();
   const navigate = useNavigate();
-  const { thread, loading, error, refetch } = useThread(threadId || "");
-  const { runs, refetch: refetchRuns } = useThreadAgentRuns(threadId || "");
+  const { thread, loading, error, refetch } = useThread(threadId || "", { disableAutoPoll: true });
+  const { runs, refetch: refetchRuns } = useThreadAgentRuns(threadId || "", { disableAutoPoll: true });
 
   // Local state for SSE-managed data
   const [sseAgentRuns, setSseAgentRuns] = useState<AgentRun[]>([]);

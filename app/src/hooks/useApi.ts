@@ -96,7 +96,7 @@ export function useTimeline(limit: number = 50) {
   return { posts, loading, error, refetch };
 }
 
-export function useThread(threadId: string) {
+export function useThread(threadId: string, options: { disableAutoPoll?: boolean } = {}) {
   const [thread, setThread] = useState<Thread | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,8 +115,9 @@ export function useThread(threadId: string) {
     }
   }, [threadId, refetch]);
 
-  // Auto-poll thread when there are active agent runs
+  // Auto-poll thread when there are active agent runs (only if auto-poll enabled)
   useEffect(() => {
+    if (options.disableAutoPoll) return;
     if (!thread) return;
 
     // Check if any post has active agent mentions
@@ -133,7 +134,7 @@ export function useThread(threadId: string) {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [thread, refetch]);
+  }, [thread, refetch, options.disableAutoPoll]);
 
   return { thread, loading, error, refetch };
 }
@@ -180,7 +181,7 @@ export function useCurrentUser() {
 }
 
 // Agent Runs with auto-polling for active runs
-export function useThreadAgentRuns(threadId: string) {
+export function useThreadAgentRuns(threadId: string, options: { disableAutoPoll?: boolean } = {}) {
   const [runs, setRuns] = useState<AgentRun[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -197,8 +198,10 @@ export function useThreadAgentRuns(threadId: string) {
     }
   }, [threadId, refetch]);
 
-  // Auto-poll when there are active agent runs
+  // Auto-poll when there are active agent runs (only if auto-poll enabled)
   useEffect(() => {
+    if (options.disableAutoPoll) return;
+
     // Check if there are any active (queued or running) agent runs
     const hasActiveRuns = runs.some(
       (run) => run.status === "queued" || run.status === "running"
@@ -212,7 +215,7 @@ export function useThreadAgentRuns(threadId: string) {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [runs, refetch]);
+  }, [runs, refetch, options.disableAutoPoll]);
 
   return { runs, loading, refetch };
 }

@@ -12,9 +12,21 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  // Use refs for callbacks to avoid re-creating EventSource when callbacks change
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
+  // Ref to track if we've already connected (prevents double connections in Strict Mode)
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     if (!threadId) return;
+
+    // Prevent double connection in React Strict Mode
+    if (hasConnectedRef.current) {
+      return;
+    }
+    hasConnectedRef.current = true;
 
     const API_BASE =
       import.meta.env.VITE_API_BASE_URL ||
@@ -37,7 +49,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
     eventSource.addEventListener("agent_run", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
-        options.onAgentRun?.(data.data);
+        optionsRef.current.onAgentRun?.(data.data);
       } catch (err) {
         console.error("Failed to parse agent_run event:", err);
       }
@@ -47,7 +59,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
     eventSource.addEventListener("agent_status_change", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
-        options.onAgentStatusChange?.(data.data);
+        optionsRef.current.onAgentStatusChange?.(data.data);
       } catch (err) {
         console.error("Failed to parse agent_status_change event:", err);
       }
@@ -57,7 +69,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
     eventSource.addEventListener("new_post", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
-        options.onNewPost?.(data.data);
+        optionsRef.current.onNewPost?.(data.data);
       } catch (err) {
         console.error("Failed to parse new_post event:", err);
       }
@@ -67,7 +79,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
     eventSource.addEventListener("error", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
-        options.onError?.(data.data.message);
+        optionsRef.current.onError?.(data.data.message);
         setError(data.data.message);
       } catch (err) {
         console.error("Failed to parse error event:", err);
@@ -86,6 +98,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
       eventSource.close();
       eventSourceRef.current = null;
       setIsConnected(false);
+      hasConnectedRef.current = false;
     };
   }, [threadId]);
 
@@ -94,6 +107,7 @@ export function useSSE(threadId: string, options: UseSSEOptions = {}) {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
+    hasConnectedRef.current = false;
     setIsConnected(false);
     setError(null);
     // The useEffect will re-establish the connection
