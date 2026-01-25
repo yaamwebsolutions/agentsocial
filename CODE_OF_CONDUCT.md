@@ -23,7 +23,7 @@ Project maintainers are responsible for clarifying and enforcing our standards.
 This Code of Conduct applies within all project spaces, and when an individual is representing the project or its community in public spaces.
 
 ## Reporting
-Report incidents to: conduct@yourdomain.com
+Report incidents to: conduct@yaam.click
 
 ## Enforcement guidelines
 Maintainers will follow these guidelines when handling incidents:

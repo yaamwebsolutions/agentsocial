@@ -179,7 +179,7 @@ Here's a sample Nginx configuration for production:
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name yaam.click;
 
     # Redirect to HTTPS
     return 301 https://$server_name$request_uri;
@@ -187,11 +187,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name your-domain.com;
+    server_name yaam.click;
 
     # SSL certificates (use Let's Encrypt)
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/yaam.click/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yaam.click/privkey.pem;
 
     # Frontend static files
     location / {
@@ -283,10 +283,10 @@ The application provides health check endpoints:
 
 ```bash
 # Basic health check
-curl https://your-domain.com/health
+curl https://yaam.click/health
 
 # Detailed status
-curl https://your-domain.com/status
+curl https://yaam.click/status
 ```
 
 ### Logging
