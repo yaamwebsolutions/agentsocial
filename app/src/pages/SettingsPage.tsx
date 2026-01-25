@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Palette, Bell, Shield, Github, Star, Share2, Trash2, Download, Moon, Sun, Monitor, Link2, Heart } from "lucide-react";
+import { ArrowLeft, User, Palette, Bell, Shield, Github, Star, Share2, Trash2, Download, Moon, Sun, Monitor, Link2, Heart, Lock } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useApi";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { Auth0LoginButton } from "@/components/Auth0LoginButton";
 import { toast } from "sonner";
 
 interface SettingSectionProps {
@@ -51,7 +52,7 @@ function Toggle({ enabled, onChange, label, description }: ToggleProps) {
       <button
         type="button"
         onClick={() => onChange(!enabled)}
-        aria-pressed={enabled ? "true" : "false"}
+        aria-pressed={enabled}
         aria-label={`Toggle ${label.toLowerCase()}`}
         className={`relative w-14 h-7 rounded-full transition-all duration-300 flex-shrink-0 ${
           enabled ? "bg-primary" : "bg-muted"
@@ -70,7 +71,7 @@ function Toggle({ enabled, onChange, label, description }: ToggleProps) {
 export function SettingsPage() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { user: currentUser } = useCurrentUser();
 
   // Settings state
@@ -263,7 +264,28 @@ export function SettingsPage() {
         }`} />
       </Card>
 
+      {/* Login Prompt for unauthenticated users */}
+      {!isAuthenticated && (
+        <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
+          <div className="p-6">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold mb-2">Sign in to access more settings</h2>
+                <p className="text-muted-foreground">
+                  Create an account or sign in to manage your profile, notifications, and data.
+                </p>
+              </div>
+              <Auth0LoginButton />
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Profile Card */}
+      {isAuthenticated && (
       <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
         <div className="p-6">
           <SettingSection
@@ -298,8 +320,9 @@ export function SettingsPage() {
           </SettingSection>
         </div>
       </Card>
+      )}
 
-      {/* Appearance Card */}
+      {/* Appearance Card - always visible */}
       <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
         <div className="p-6">
           <SettingSection
@@ -334,6 +357,7 @@ export function SettingsPage() {
       </Card>
 
       {/* Notifications Card */}
+      {isAuthenticated && (
       <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
         <div className="p-6">
           <SettingSection
@@ -370,8 +394,10 @@ export function SettingsPage() {
           </SettingSection>
         </div>
       </Card>
+      )}
 
       {/* Privacy Card */}
+      {isAuthenticated && (
       <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
         <div className="p-6">
           <SettingSection
@@ -402,8 +428,10 @@ export function SettingsPage() {
           </SettingSection>
         </div>
       </Card>
+      )}
 
       {/* Data & Danger Zone */}
+      {isAuthenticated && (
       <Card className="border-0 rounded-2xl overflow-hidden mb-6 bg-card">
         <div className="p-6">
           <SettingSection
@@ -455,15 +483,22 @@ export function SettingsPage() {
           </SettingSection>
         </div>
       </Card>
+      )}
 
-      {/* Sign Out */}
-      <Button
-        variant="outline"
-        onClick={handleSignOut}
-        className="w-full rounded-full h-12 font-medium border-destructive/30 text-destructive hover:bg-destructive/10"
-      >
-        Sign Out
-      </Button>
+      {/* Sign Out / Sign In */}
+      {isAuthenticated ? (
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+          className="w-full rounded-full h-12 font-medium border-destructive/30 text-destructive hover:bg-destructive/10"
+        >
+          Sign Out
+        </Button>
+      ) : (
+        <div className="text-center">
+          <Auth0LoginButton />
+        </div>
+      )}
 
       {/* Footer with GitHub love */}
       <div className="mt-8 text-center">
