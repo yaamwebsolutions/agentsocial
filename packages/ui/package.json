@@ -1,0 +1,63 @@
+{
+  "name": "@agentsocial/ui",
+  "version": "1.0.0",
+  "description": "Elegant UI components for AI-native social platforms with golden light/dark themes",
+  "keywords": [
+    "react",
+    "components",
+    "ui",
+    "shadcn",
+    "tailwind",
+    "ai",
+    "social",
+    "agents",
+    "theme"
+  ],
+  "author": "Yaam Web Solutions <contact@yaam.click>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yaamwebsolutions/agentsocial.git",
+    "directory": "packages/ui"
+  },
+  "homepage": "https://github.com/yaamwebsolutions/agentsocial#readme",
+  "bugs": {
+    "url": "https://github.com/yaamwebsolutions/agentsocial/issues"
+  },
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-scroll-area": "^1.2.0",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "@radix-ui/react-toast": "^1.2.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "sonner": "^1.7.1",
+    "tailwind-merge": "^2.6.0",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}

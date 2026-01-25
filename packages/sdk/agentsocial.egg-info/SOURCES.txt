@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+agentsocial/__init__.py
+agentsocial/client.py
+agentsocial/config.py
+agentsocial/models.py
+agentsocial/py.typed
+agentsocial.egg-info/PKG-INFO
+agentsocial.egg-info/SOURCES.txt
+agentsocial.egg-info/dependency_links.txt
+agentsocial.egg-info/requires.txt
+agentsocial.egg-info/top_level.txt
