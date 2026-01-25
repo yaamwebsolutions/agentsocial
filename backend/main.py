@@ -601,6 +601,128 @@ async def get_thread_agent_runs(thread_id: str):
     return {"runs": runs}
 
 
+@app.get("/threads/{thread_id}/stream", tags=["Posts"])
+async def stream_thread_updates(thread_id: str):
+    """
+    Stream real-time updates for a thread using Server-Sent Events (SSE).
+
+    This endpoint provides a continuous stream of updates including:
+    - New agent runs (queued/running)
+    - Agent status changes
+    - New posts/replies in the thread
+
+    The connection stays open and sends events as they happen.
+    Clients should use EventSource to consume this stream.
+    """
+    from fastapi.responses import StreamingResponse
+    import asyncio
+    import json
+
+    async def event_stream():
+        """Generator that yields SSE events"""
+        # Track previously seen runs to detect changes
+        seen_runs = set()
+        # Track previously seen posts
+        seen_posts = set()
+        last_new_post_id = None
+
+        try:
+            while True:
+                # Check for new/updated agent runs
+                active_runs = store.get_active_agent_runs(thread_id)
+                current_runs = {run.id for run in active_runs}
+
+                # Check for new runs
+                new_runs = current_runs - seen_runs
+                if new_runs:
+                    for run_id in new_runs:
+                        run = next((r for r in active_runs if r.id == run_id), None)
+                        if run:
+                            data = json.dumps({
+                                "type": "agent_run",
+                                "data": {
+                                    "id": run.id,
+                                    "agent_handle": run.agent_handle,
+                                    "status": run.status,
+                                    "thread_id": run.thread_id,
+                                    "trigger_post_id": run.trigger_post_id,
+                                    "started_at": run.started_at.isoformat() if hasattr(run.started_at, 'isoformat') else run.started_at,
+                                }
+                            })
+                            yield f"event: agent_run\ndata: {data}\n\n"
+                    seen_runs.update(new_runs)
+
+                # Check for status changes in existing runs
+                for run in active_runs:
+                    if run.id in seen_runs:
+                        # Get latest run data from store
+                        latest_run = store.get_agent_run(run.id)
+                        if latest_run and latest_run.status != run.status:
+                            data = json.dumps({
+                                "type": "agent_status_change",
+                                "data": {
+                                    "id": latest_run.id,
+                                    "agent_handle": latest_run.agent_handle,
+                                    "status": latest_run.status,
+                                    "thread_id": latest_run.thread_id,
+                                    "ended_at": latest_run.ended_at.isoformat() if latest_run.ended_at else None,
+                                }
+                            })
+                            yield f"event: agent_status_change\ndata: {data}\n\n"
+
+                # Check for new posts in the thread
+                thread = store.get_thread(thread_id)
+                if thread:
+                    current_post_ids = {p.id for p in [thread.root_post] + thread.replies}
+                    new_posts = current_post_ids - seen_posts
+
+                    if new_posts:
+                        for post in [thread.root_post] + thread.replies:
+                            if post.id in new_posts and post.id != last_new_post_id:
+                                data = json.dumps({
+                                    "type": "new_post",
+                                    "data": {
+                                        "id": post.id,
+                                        "author_handle": post.author_handle,
+                                        "author_type": post.author_type.value if hasattr(post.author_type, 'value') else post.author_type,
+                                        "text": post.text,
+                                        "created_at": post.created_at.isoformat() if hasattr(post.created_at, 'isoformat') else post.created_at,
+                                        "parent_id": post.parent_id,
+                                        "thread_id": post.thread_id,
+                                        "mentions": post.mentions or [],
+                                    }
+                                })
+                                yield f"event: new_post\ndata: {data}\n\n"
+                                last_new_post_id = post.id
+
+                        seen_posts.update(new_posts)
+
+                # Send heartbeat every 5 seconds to keep connection alive
+                yield ": heartbeat\n\n"
+
+                # Wait before next check
+                await asyncio.sleep(1)
+
+        except asyncio.CancelledError:
+            # Client disconnected
+            logger.info(f"SSE client disconnected from thread {thread_id}")
+            raise
+        except Exception as e:
+            logger.error(f"SSE error for thread {thread_id}: {e}")
+            data = json.dumps({"type": "error", "data": {"message": str(e)}})
+            yield f"event: error\ndata: {data}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        }
+    )
+
+
 @app.post("/agent-runs/{run_id}/retry", tags=["Posts"])
 async def retry_agent_run(run_id: str):
     """
