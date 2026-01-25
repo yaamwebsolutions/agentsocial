@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,6 @@ import { PostCard } from "@/components/PostCard";
 import { useUserStats, useUserPosts, useCurrentUser } from "@/hooks/useApi";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
-import type { Post } from "@/types/api";
 
 export function ProfilePage() {
   const { userId } = useParams<{ userId: string }>();
@@ -15,9 +13,9 @@ export function ProfilePage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const { data: currentUser } = useCurrentUser();
-  const { stats, loading: statsLoading, error: statsError } = useUserStats(userId || "user_1");
-  const { posts, loading: postsLoading, error: postsError, refetch } = useUserPosts(userId || "user_1");
+  const { user: currentUser } = useCurrentUser();
+  const { stats, loading: statsLoading } = useUserStats(userId || "user_1");
+  const { posts, loading: postsLoading, refetch } = useUserPosts(userId || "user_1");
 
   const isOwnProfile = currentUser?.id === userId;
 
@@ -104,10 +102,7 @@ export function ProfilePage() {
               post={post}
               isReply={!!post.parent_id}
               showThread={false}
-              onDelete={(deletedId) => {
-                // Remove the deleted post from the list
-                const updatedPosts = posts.filter((p) => p.id !== deletedId);
-                // In a real app, you'd update the parent state
+              onDelete={() => {
                 refetch();
               }}
             />

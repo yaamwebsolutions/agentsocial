@@ -1,11 +1,9 @@
-import { useState } from "react";
 import { Bot, Home, Users, Settings, MoreVertical, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CommandPalette } from "./CommandPalette";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { NotificationsDropdown } from "./NotificationsDropdown";
-import { SettingsModal } from "./SettingsModal";
 import { Auth0LoginButton } from "./Auth0LoginButton";
 import { useAgents } from "@/hooks/useApi";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -25,7 +23,6 @@ export function Header() {
   const { agents } = useAgents();
   const { theme } = useTheme();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleCreatePost = (text: string) => {
     const composer = document.getElementById("composer-textarea") as HTMLTextAreaElement;
@@ -109,7 +106,7 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSettingsOpen(true)}
+                  onClick={() => navigate("/settings")}
                   className="rounded-full h-8 w-8 p-0"
                 >
                   <Settings className="w-3.5 h-3.5" />
@@ -166,7 +163,7 @@ export function Header() {
                     Agents
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                  <DropdownMenuItem onClick={() => navigate("/settings")}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
@@ -193,9 +190,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-      {/* Settings Modal */}
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </>
   );
 }
