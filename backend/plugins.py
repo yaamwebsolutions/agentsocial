@@ -26,22 +26,26 @@ from config import AGENTS_CONFIG_PATH
 # Plugin Types
 # =============================================================================
 
+
 class PluginHook(str, Enum):
     """Available plugin hooks"""
-    ON_POST_CREATE = "on_post_create"           # After a post is created
-    ON_AGENT_RESPONSE = "on_agent_response"     # After an agent responds
-    ON_THREAD_COMPLETE = "on_thread_complete"   # When a thread is fully processed
-    ON_AGENT_LOAD = "on_agent_load"             # When agents are loaded
-    ON_API_REQUEST = "on_api_request"           # Before API request is processed
+
+    ON_POST_CREATE = "on_post_create"  # After a post is created
+    ON_AGENT_RESPONSE = "on_agent_response"  # After an agent responds
+    ON_THREAD_COMPLETE = "on_thread_complete"  # When a thread is fully processed
+    ON_AGENT_LOAD = "on_agent_load"  # When agents are loaded
+    ON_API_REQUEST = "on_api_request"  # Before API request is processed
 
 
 # =============================================================================
 # Plugin Metadata
 # =============================================================================
 
+
 @dataclass
 class PluginMetadata:
     """Metadata about a plugin"""
+
     name: str
     version: str
     description: str
@@ -54,6 +58,7 @@ class PluginMetadata:
 # =============================================================================
 # Plugin Base Class
 # =============================================================================
+
 
 class Plugin:
     """Base class for all plugins"""
@@ -90,17 +95,21 @@ class Plugin:
 # Hook Decorator
 # =============================================================================
 
+
 def hook(hook_type: PluginHook):
     """Decorator to register a method as a hook"""
+
     def decorator(func: Callable) -> Callable:
         func._hook_type = hook_type  # type: ignore
         return func
+
     return decorator
 
 
 # =============================================================================
 # Plugin Manager
 # =============================================================================
+
 
 class PluginManager:
     """Manages plugin loading, registration, and execution"""
@@ -142,9 +151,11 @@ class PluginManager:
                 # Find Plugin class
                 for item_name in dir(module):
                     item = getattr(module, item_name)
-                    if (inspect.isclass(item) and
-                        issubclass(item, Plugin) and
-                        item is not Plugin):
+                    if (
+                        inspect.isclass(item)
+                        and issubclass(item, Plugin)
+                        and item is not Plugin
+                    ):
                         # Instantiate to get metadata
                         plugin_instance = item()
                         if plugin_instance.metadata:
@@ -166,9 +177,11 @@ class PluginManager:
                 # Find Plugin class
                 for item_name in dir(module):
                     item = getattr(module, item_name)
-                    if (inspect.isclass(item) and
-                        issubclass(item, Plugin) and
-                        item is not Plugin):
+                    if (
+                        inspect.isclass(item)
+                        and issubclass(item, Plugin)
+                        and item is not Plugin
+                    ):
                         plugin_instance: Plugin = item()
                         metadata = plugin_instance.metadata
 
@@ -252,6 +265,7 @@ plugin_manager.add_plugin_directory(Path(__file__).parent / "plugins")
 # Example Plugins
 # =============================================================================
 
+
 class LoggingPlugin(Plugin):
     """Example plugin that logs agent responses"""
 
@@ -260,7 +274,7 @@ class LoggingPlugin(Plugin):
         version="1.0.0",
         description="Logs all agent responses to a file",
         author="Agent Twitter Team",
-        enabled=True
+        enabled=True,
     )
 
     @hook(PluginHook.ON_AGENT_RESPONSE)
@@ -280,7 +294,7 @@ class AnalyticsPlugin(Plugin):
         version="1.0.0",
         description="Tracks agent usage statistics",
         author="Agent Twitter Team",
-        enabled=True
+        enabled=True,
     )
 
     def __init__(self):
@@ -297,6 +311,7 @@ class AnalyticsPlugin(Plugin):
 # =============================================================================
 # Plugin Configuration
 # =============================================================================
+
 
 class PluginConfig:
     """Configuration for the plugin system"""
@@ -332,6 +347,7 @@ def initialize_plugins():
 # =============================================================================
 # Convenience Functions
 # =============================================================================
+
 
 def register_plugin(plugin: Plugin) -> bool:
     """Register a plugin programmatically"""

@@ -19,7 +19,7 @@ class SentimentPlugin(Plugin):
         version="1.0.0",
         description="Analyzes sentiment of posts and agent responses",
         author="Agent Twitter Team",
-        enabled=True
+        enabled=True,
     )
 
     def __init__(self):
@@ -29,12 +29,31 @@ class SentimentPlugin(Plugin):
     def _analyze_sentiment(self, text: str) -> Dict[str, Any]:
         """Simple sentiment analysis (can be enhanced with NLP library)"""
         positive_words = [
-            "good", "great", "awesome", "excellent", "happy", "love",
-            "wonderful", "amazing", "best", "fantastic", "thanks"
+            "good",
+            "great",
+            "awesome",
+            "excellent",
+            "happy",
+            "love",
+            "wonderful",
+            "amazing",
+            "best",
+            "fantastic",
+            "thanks",
         ]
         negative_words = [
-            "bad", "terrible", "awful", "hate", "worst", "horrible",
-            "sad", "angry", "upset", "disappointed", "error", "fail"
+            "bad",
+            "terrible",
+            "awful",
+            "hate",
+            "worst",
+            "horrible",
+            "sad",
+            "angry",
+            "upset",
+            "disappointed",
+            "error",
+            "fail",
         ]
 
         text_lower = text.lower()
@@ -59,31 +78,28 @@ class SentimentPlugin(Plugin):
             "score": score,
             "sentiment": sentiment,
             "positive_words": positive_count,
-            "negative_words": negative_count
+            "negative_words": negative_count,
         }
 
     @hook(PluginHook.ON_POST_CREATE)
-    def analyze_post_sentiment(self, post_id: str, text: str, author_id: str) -> Dict[str, Any]:
+    def analyze_post_sentiment(
+        self, post_id: str, text: str, author_id: str
+    ) -> Dict[str, Any]:
         """Analyze sentiment of new posts"""
         result = self._analyze_sentiment(text)
         self.sentiment_scores[post_id] = result["score"]
 
         # Add metadata to post
-        return {
-            "sentiment": result,
-            "post_id": post_id
-        }
+        return {"sentiment": result, "post_id": post_id}
 
     @hook(PluginHook.ON_AGENT_RESPONSE)
-    def analyze_agent_sentiment(self, agent_name: str, response: str, post_id: str) -> Dict[str, Any]:
+    def analyze_agent_sentiment(
+        self, agent_name: str, response: str, post_id: str
+    ) -> Dict[str, Any]:
         """Analyze sentiment of agent responses"""
         result = self._analyze_sentiment(response)
 
-        return {
-            "agent": agent_name,
-            "sentiment": result,
-            "post_id": post_id
-        }
+        return {"agent": agent_name, "sentiment": result, "post_id": post_id}
 
     def get_sentiment_stats(self) -> Dict[str, Any]:
         """Get overall sentiment statistics"""
@@ -101,5 +117,5 @@ class SentimentPlugin(Plugin):
             "total_analyzed": len(scores),
             "positive": positive_count,
             "negative": negative_count,
-            "neutral": len(scores) - positive_count - negative_count
+            "neutral": len(scores) - positive_count - negative_count,
         }

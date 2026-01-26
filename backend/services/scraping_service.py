@@ -2,6 +2,7 @@
 Scraping Service - Integrates with ScraperAPI for web scraping.
 Allows agents to fetch and extract content from web pages.
 """
+
 import httpx
 import logging
 from typing import Optional, Dict

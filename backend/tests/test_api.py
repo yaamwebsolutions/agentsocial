@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 # Health & Status Endpoints
 # =============================================================================
 
+
 class TestHealthEndpoints:
     """Tests for health check and status endpoints"""
 
@@ -47,14 +48,14 @@ class TestHealthEndpoints:
 # Post Endpoints
 # =============================================================================
 
+
 class TestPostEndpoints:
     """Tests for post creation and retrieval endpoints"""
 
     def test_create_post(self, authenticated_client: TestClient):
         """Test creating a new post"""
         response = authenticated_client.post(
-            "/posts",
-            json={"text": "Hello world!", "parent_id": None}
+            "/posts", json={"text": "Hello world!", "parent_id": None}
         )
         assert response.status_code == 200
         data = response.json()
@@ -64,16 +65,14 @@ class TestPostEndpoints:
     def test_create_post_with_mention(self, authenticated_client: TestClient):
         """Test creating a post with an agent mention"""
         response = authenticated_client.post(
-            "/posts",
-            json={"text": "Hello @grok!", "parent_id": None}
+            "/posts", json={"text": "Hello @grok!", "parent_id": None}
         )
         assert response.status_code == 200
 
     def test_create_post_empty_text(self, authenticated_client: TestClient):
         """Test creating a post with empty text (currently allowed)"""
         response = authenticated_client.post(
-            "/posts",
-            json={"text": "", "parent_id": None}
+            "/posts", json={"text": "", "parent_id": None}
         )
         # Note: Empty text is currently accepted by the API
         assert response.status_code == 200
@@ -82,6 +81,7 @@ class TestPostEndpoints:
         """Test retrieving a thread"""
         # First create a post to establish a thread
         from store import store
+
         post = store.create_post("Test post for thread")
 
         response = client.get(f"/threads/{post.thread_id}")
@@ -106,6 +106,7 @@ class TestPostEndpoints:
 # =============================================================================
 # Agent Endpoints
 # =============================================================================
+
 
 class TestAgentEndpoints:
     """Tests for agent listing and retrieval endpoints"""
@@ -138,8 +139,7 @@ class TestAgentEndpoints:
     def test_prompt_agent(self, client: TestClient, mock_llm_service):
         """Test sending a direct prompt to an agent"""
         response = client.post(
-            "/agents/prompt",
-            json={"agent_handle": "grok", "prompt": "Tell me a joke"}
+            "/agents/prompt", json={"agent_handle": "grok", "prompt": "Tell me a joke"}
         )
         # Response depends on whether grok agent exists
         assert response.status_code in [200, 404]
@@ -148,6 +148,7 @@ class TestAgentEndpoints:
 # =============================================================================
 # User Endpoints
 # =============================================================================
+
 
 class TestUserEndpoints:
     """Tests for user-related endpoints"""
@@ -165,14 +166,14 @@ class TestUserEndpoints:
 # Search Endpoints
 # =============================================================================
 
+
 class TestSearchEndpoints:
     """Tests for search endpoints"""
 
     def test_web_search_disabled(self, client: TestClient):
         """Test web search endpoint"""
         response = client.post(
-            "/search/web",
-            json={"query": "test query", "num_results": 5}
+            "/search/web", json={"query": "test query", "num_results": 5}
         )
         # Returns 501 when SERPER_API_KEY not set, or 200 with results
         assert response.status_code in [200, 501]
@@ -188,6 +189,7 @@ class TestSearchEndpoints:
 # Email Endpoints
 # =============================================================================
 
+
 class TestEmailEndpoints:
     """Tests for email endpoints"""
 
@@ -198,8 +200,8 @@ class TestEmailEndpoints:
             json={
                 "to": "test@example.com",
                 "subject": "Test",
-                "html": "<p>Test email</p>"
-            }
+                "html": "<p>Test email</p>",
+            },
         )
         # Returns 501 when not configured, or 500 if API call fails
         assert response.status_code in [500, 501]
@@ -208,6 +210,7 @@ class TestEmailEndpoints:
 # =============================================================================
 # Error Handling
 # =============================================================================
+
 
 class TestErrorHandling:
     """Tests for error handling"""

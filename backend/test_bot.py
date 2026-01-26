@@ -3,6 +3,7 @@
 Agent Twitter - Comprehensive Test Bot
 Tests all API endpoints and services automatically.
 """
+
 import asyncio
 import httpx
 import json
@@ -17,15 +18,16 @@ TEST_EMAIL = "test@example.com"  # Change this for email tests
 
 class Colors:
     """ANSI color codes for terminal output"""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 def print_header(text: str):
@@ -56,12 +58,7 @@ class TestBot:
     def __init__(self, base_url: str = BASE_URL):
         self.base_url = base_url
         self.client = None
-        self.results = {
-            "passed": 0,
-            "failed": 0,
-            "skipped": 0,
-            "tests": []
-        }
+        self.results = {"passed": 0, "failed": 0, "skipped": 0, "tests": []}
         self.test_data = {}
 
     async def __aenter__(self):
@@ -72,13 +69,12 @@ class TestBot:
         if self.client:
             await self.client.aclose()
 
-    def _record_test(self, name: str, passed: bool, error: str = None, duration: float = 0):
-        self.results["tests"].append({
-            "name": name,
-            "passed": passed,
-            "error": error,
-            "duration": duration
-        })
+    def _record_test(
+        self, name: str, passed: bool, error: str = None, duration: float = 0
+    ):
+        self.results["tests"].append(
+            {"name": name, "passed": passed, "error": error, "duration": duration}
+        )
         if passed:
             self.results["passed"] += 1
             print_success(f"{name} ({duration:.2f}s)")
@@ -90,7 +86,10 @@ class TestBot:
         """Make a GET request"""
         try:
             response = await self.client.get(f"{self.base_url}{endpoint}", **kwargs)
-            return {"status": response.status_code, "data": response.json() if response.text else None}
+            return {
+                "status": response.status_code,
+                "data": response.json() if response.text else None,
+            }
         except Exception as e:
             return {"status": 0, "error": str(e)}
 
@@ -98,7 +97,10 @@ class TestBot:
         """Make a POST request"""
         try:
             response = await self.client.post(f"{self.base_url}{endpoint}", **kwargs)
-            return {"status": response.status_code, "data": response.json() if response.text else None}
+            return {
+                "status": response.status_code,
+                "data": response.json() if response.text else None,
+            }
         except Exception as e:
             return {"status": 0, "error": str(e)}
 
@@ -115,7 +117,12 @@ class TestBot:
         if result["status"] == 200 and result["data"].get("status") == "ok":
             self._record_test("Health Check", True, duration=duration)
         else:
-            self._record_test("Health Check", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Health Check",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_status_endpoint(self):
         """Test the status endpoint"""
@@ -125,9 +132,16 @@ class TestBot:
 
         if result["status"] == 200 and "services" in result.get("data", {}):
             self._record_test("Status Endpoint", True, duration=duration)
-            print_info(f"  Services: {json.dumps(result['data']['services'], indent=2)}")
+            print_info(
+                f"  Services: {json.dumps(result['data']['services'], indent=2)}"
+            )
         else:
-            self._record_test("Status Endpoint", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Status Endpoint",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_root_endpoint(self):
         """Test the root endpoint"""
@@ -138,7 +152,12 @@ class TestBot:
         if result["status"] == 200 and "endpoints" in result.get("data", {}):
             self._record_test("Root Endpoint", True, duration=duration)
         else:
-            self._record_test("Root Endpoint", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Root Endpoint",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     # ========================================================================
     # AGENT TESTS
@@ -152,14 +171,21 @@ class TestBot:
 
         if result["status"] == 200 and isinstance(result.get("data"), list):
             agents = result["data"]
-            self._record_test(f"List Agents ({len(agents)} available)", True, duration=duration)
+            self._record_test(
+                f"List Agents ({len(agents)} available)", True, duration=duration
+            )
             self.test_data["agents"] = agents
             for agent in agents[:3]:  # Show first 3
                 print_info(f"  - {agent.get('handle')}: {agent.get('name')}")
             if len(agents) > 3:
                 print_info(f"  ... and {len(agents) - 3} more")
         else:
-            self._record_test("List Agents", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "List Agents",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_get_agent(self):
         """Test getting a specific agent"""
@@ -170,7 +196,12 @@ class TestBot:
         if result["status"] == 200 and result["data"].get("id") == "grok":
             self._record_test("Get Agent (@grok)", True, duration=duration)
         else:
-            self._record_test("Get Agent (@grok)", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Get Agent (@grok)",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     # ========================================================================
     # POST TESTS
@@ -189,7 +220,12 @@ class TestBot:
             self._record_test("Create Post", True, duration=duration)
             print_info(f"  Post ID: {post.get('id')}")
         else:
-            self._record_test("Create Post", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Create Post",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_post_with_agent_mention(self):
         """Test creating a post with agent mention"""
@@ -207,7 +243,12 @@ class TestBot:
             # Wait for agent to process
             await asyncio.sleep(2)
         else:
-            self._record_test("Post with Agent Mention", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Post with Agent Mention",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_get_timeline(self):
         """Test getting the timeline"""
@@ -216,9 +257,16 @@ class TestBot:
         duration = time.time() - start
 
         if result["status"] == 200 and isinstance(result.get("data"), list):
-            self._record_test(f"Get Timeline ({len(result['data'])} posts)", True, duration=duration)
+            self._record_test(
+                f"Get Timeline ({len(result['data'])} posts)", True, duration=duration
+            )
         else:
-            self._record_test("Get Timeline", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Get Timeline",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     async def test_get_thread(self):
         """Test getting a thread"""
@@ -233,9 +281,18 @@ class TestBot:
 
         if result["status"] == 200:
             thread = result["data"]
-            self._record_test(f"Get Thread ({len(thread.get('replies', []))} replies)", True, duration=duration)
+            self._record_test(
+                f"Get Thread ({len(thread.get('replies', []))} replies)",
+                True,
+                duration=duration,
+            )
         else:
-            self._record_test("Get Thread", False, str(result.get("error", "Unexpected response")), duration)
+            self._record_test(
+                "Get Thread",
+                False,
+                str(result.get("error", "Unexpected response")),
+                duration,
+            )
 
     # ========================================================================
     # AGENT PROMPT TESTS
@@ -244,10 +301,13 @@ class TestBot:
     async def test_agent_prompt(self):
         """Test direct agent prompting"""
         start = time.time()
-        result = await self._post("/agents/prompt", json={
-            "agent_handle": "@grok",
-            "prompt": "What is 2+2? Answer in one word."
-        })
+        result = await self._post(
+            "/agents/prompt",
+            json={
+                "agent_handle": "@grok",
+                "prompt": "What is 2+2? Answer in one word.",
+            },
+        )
         duration = time.time() - start
 
         if result["status"] == 200 and result["data"].get("response"):
@@ -255,7 +315,12 @@ class TestBot:
             response = result["data"]["response"][:100]
             print_info(f"  Response: {response}...")
         else:
-            self._record_test("Agent Direct Prompt", False, str(result.get("error", "No response")), duration)
+            self._record_test(
+                "Agent Direct Prompt",
+                False,
+                str(result.get("error", "No response")),
+                duration,
+            )
 
     # ========================================================================
     # SEARCH TESTS
@@ -264,22 +329,30 @@ class TestBot:
     async def test_web_search(self):
         """Test web search"""
         start = time.time()
-        result = await self._post("/search/web", json={
-            "query": "Python programming",
-            "num_results": 5
-        })
+        result = await self._post(
+            "/search/web", json={"query": "Python programming", "num_results": 5}
+        )
         duration = time.time() - start
 
         if result["status"] == 200:
             data = result["data"]
             if "results" in data:
-                self._record_test(f"Web Search ({len(data['results'])} results)", True, duration=duration)
+                self._record_test(
+                    f"Web Search ({len(data['results'])} results)",
+                    True,
+                    duration=duration,
+                )
                 return
             elif "detail" in data and "not enabled" in data["detail"].lower():
                 self.results["skipped"] += 1
                 print_warning("Web Search - Skipped (service not enabled)")
                 return
-        self._record_test("Web Search", False, str(result.get("error", "Unexpected response")), duration)
+        self._record_test(
+            "Web Search",
+            False,
+            str(result.get("error", "Unexpected response")),
+            duration,
+        )
 
     async def test_image_search(self):
         """Test image search"""
@@ -290,9 +363,18 @@ class TestBot:
         if result["status"] == 200:
             data = result["data"]
             if "results" in data:
-                self._record_test(f"Image Search ({len(data['results'])} results)", True, duration=duration)
+                self._record_test(
+                    f"Image Search ({len(data['results'])} results)",
+                    True,
+                    duration=duration,
+                )
                 return
-        self._record_test("Image Search", False, str(result.get("error", "Unexpected response")), duration)
+        self._record_test(
+            "Image Search",
+            False,
+            str(result.get("error", "Unexpected response")),
+            duration,
+        )
 
     # ========================================================================
     # SCRAPING TESTS
@@ -301,10 +383,9 @@ class TestBot:
     async def test_scrape_webpage(self):
         """Test webpage scraping"""
         start = time.time()
-        result = await self._post("/scrape", json={
-            "url": "https://example.com",
-            "extract_links": False
-        })
+        result = await self._post(
+            "/scrape", json={"url": "https://example.com", "extract_links": False}
+        )
         duration = time.time() - start
 
         if result["status"] == 200:
@@ -317,7 +398,9 @@ class TestBot:
                 self.results["skipped"] += 1
                 print_warning("Scrape Webpage - Skipped (service not enabled)")
                 return
-        self._record_test("Scrape Webpage", False, str(result.get("error", "No content")), duration)
+        self._record_test(
+            "Scrape Webpage", False, str(result.get("error", "No content")), duration
+        )
 
     # ========================================================================
     # MEDIA TESTS
@@ -326,38 +409,51 @@ class TestBot:
     async def test_image_generation(self):
         """Test image generation"""
         start = time.time()
-        result = await self._post("/media/images/generate", json={
-            "prompt": "A beautiful sunset over mountains",
-            "image_size": "16:9",
-            "num_images": 1
-        })
+        result = await self._post(
+            "/media/images/generate",
+            json={
+                "prompt": "A beautiful sunset over mountains",
+                "image_size": "16:9",
+                "num_images": 1,
+            },
+        )
         duration = time.time() - start
 
         if result["status"] == 200:
             self._record_test("Image Generation", True, duration=duration)
             return
-        elif result.get("data", {}).get("detail") and "not enabled" in str(result["data"]["detail"]).lower():
+        elif (
+            result.get("data", {}).get("detail")
+            and "not enabled" in str(result["data"]["detail"]).lower()
+        ):
             self.results["skipped"] += 1
             print_warning("Image Generation - Skipped (service not enabled)")
             return
-        self._record_test("Image Generation", False, str(result.get("error", "Failed")), duration)
+        self._record_test(
+            "Image Generation", False, str(result.get("error", "Failed")), duration
+        )
 
     async def test_media_image_search(self):
         """Test media image search API"""
         start = time.time()
-        result = await self._post("/media/images/search", json={
-            "query": "sunset",
-            "per_page": 5,
-            "source": "auto"
-        })
+        result = await self._post(
+            "/media/images/search",
+            json={"query": "sunset", "per_page": 5, "source": "auto"},
+        )
         duration = time.time() - start
 
         if result["status"] == 200:
             data = result["data"]
             if "results" in data:
-                self._record_test(f"Media Image Search ({len(data['results'])} results)", True, duration=duration)
+                self._record_test(
+                    f"Media Image Search ({len(data['results'])} results)",
+                    True,
+                    duration=duration,
+                )
                 return
-        self._record_test("Media Image Search", False, str(result.get("error", "Failed")), duration)
+        self._record_test(
+            "Media Image Search", False, str(result.get("error", "Failed")), duration
+        )
 
     # ========================================================================
     # EMAIL TESTS
@@ -366,22 +462,30 @@ class TestBot:
     async def test_send_email(self):
         """Test sending email"""
         start = time.time()
-        result = await self._post("/email/send", json={
-            "to": TEST_EMAIL,
-            "subject": "Test email from Agent Twitter",
-            "html": "<h1>Test</h1><p>This is a test email from the automated test bot.</p>"
-        })
+        result = await self._post(
+            "/email/send",
+            json={
+                "to": TEST_EMAIL,
+                "subject": "Test email from Agent Twitter",
+                "html": "<h1>Test</h1><p>This is a test email from the automated test bot.</p>",
+            },
+        )
         duration = time.time() - start
 
         if result["status"] == 200:
             self._record_test("Send Email", True, duration=duration)
             print_info(f"  Email sent to: {TEST_EMAIL}")
             return
-        elif result.get("data", {}).get("detail") and "not enabled" in str(result["data"]["detail"]).lower():
+        elif (
+            result.get("data", {}).get("detail")
+            and "not enabled" in str(result["data"]["detail"]).lower()
+        ):
             self.results["skipped"] += 1
             print_warning("Send Email - Skipped (service not enabled)")
             return
-        self._record_test("Send Email", False, str(result.get("error", "Failed")), duration)
+        self._record_test(
+            "Send Email", False, str(result.get("error", "Failed")), duration
+        )
 
     # ========================================================================
     # MULTI-AGENT TESTS
@@ -397,11 +501,18 @@ class TestBot:
         if result["status"] == 200:
             agent_runs = result["data"].get("triggered_agent_runs", [])
             if len(agent_runs) == 3:
-                self._record_test("Multi-Agent Post (3 agents)", True, duration=duration)
+                self._record_test(
+                    "Multi-Agent Post (3 agents)", True, duration=duration
+                )
                 # Wait for agents to process
                 await asyncio.sleep(3)
                 return
-        self._record_test("Multi-Agent Post", False, f"Expected 3 agents, got {len(agent_runs)}", duration)
+        self._record_test(
+            "Multi-Agent Post",
+            False,
+            f"Expected 3 agents, got {len(agent_runs)}",
+            duration,
+        )
 
     # ========================================================================
     # LOAD TESTS
@@ -413,17 +524,25 @@ class TestBot:
 
         start = time.time()
         tasks = [
-            self._post("/posts", json={"text": f"Concurrent test post {i+1}"})
+            self._post("/posts", json={"text": f"Concurrent test post {i + 1}"})
             for i in range(5)
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         duration = time.time() - start
 
-        successful = sum(1 for r in results if isinstance(r, dict) and r.get("status") == 200)
+        successful = sum(
+            1 for r in results if isinstance(r, dict) and r.get("status") == 200
+        )
         if successful == 5:
-            self._record_test(f"Concurrent Posts (5 posts in {duration:.2f}s)", True, duration=duration)
+            self._record_test(
+                f"Concurrent Posts (5 posts in {duration:.2f}s)",
+                True,
+                duration=duration,
+            )
         else:
-            self._record_test("Concurrent Posts", False, f"Only {successful}/5 succeeded", duration)
+            self._record_test(
+                "Concurrent Posts", False, f"Only {successful}/5 succeeded", duration
+            )
 
     # ========================================================================
     # RUN ALL TESTS

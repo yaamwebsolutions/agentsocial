@@ -2,6 +2,7 @@
 OAuth state utilities for CSRF protection.
 Uses a signed, time-limited token to avoid server-side storage.
 """
+
 from __future__ import annotations
 
 import base64

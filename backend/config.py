@@ -2,6 +2,7 @@
 Application configuration loaded from environment variables.
 Automatically loads .env file from project root.
 """
+
 import os
 import secrets
 from typing import List, Optional
@@ -13,6 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env.local or .env
 try:
     from dotenv import load_dotenv
+
     for env_path in (BASE_DIR / ".env.local", BASE_DIR / ".env"):
         if env_path.exists():
             load_dotenv(env_path, override=True)
@@ -40,7 +42,11 @@ APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
 # =============================================================================
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 BACKEND_HOST = os.getenv("BACKEND_HOST", "0.0.0.0")
-CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") != "*" else ["*"]
+CORS_ORIGINS: List[str] = (
+    os.getenv("CORS_ORIGINS", "*").split(",")
+    if os.getenv("CORS_ORIGINS") != "*"
+    else ["*"]
+)
 
 # =============================================================================
 # LOGGING
@@ -85,7 +91,9 @@ PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
 PIXABAY_ENABLED = bool(PIXABAY_API_KEY and PIXABAY_API_KEY != "your-pixabay-key")
 
 UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
-UNSPLASH_ENABLED = bool(UNSPLASH_ACCESS_KEY and UNSPLASH_ACCESS_KEY != "your-unsplash-key")
+UNSPLASH_ENABLED = bool(
+    UNSPLASH_ACCESS_KEY and UNSPLASH_ACCESS_KEY != "your-unsplash-key"
+)
 
 # =============================================================================
 # MCP (Model Context Protocol)
@@ -137,7 +145,9 @@ YAAM_ENABLED = bool(YAAM_API_URL)
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
-GITHUB_OAUTH_CALLBACK_URL = os.getenv("GITHUB_OAUTH_CALLBACK_URL", "https://api.yaam.click/auth/github/callback")
+GITHUB_OAUTH_CALLBACK_URL = os.getenv(
+    "GITHUB_OAUTH_CALLBACK_URL", "https://api.yaam.click/auth/github/callback"
+)
 GITHUB_OAUTH_SCOPE = os.getenv("GITHUB_OAUTH_SCOPE", "read:user user:email repo")
 GITHUB_ENABLED = bool(GITHUB_TOKEN or (GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET))
 
@@ -158,14 +168,18 @@ AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "false").lower() == "true"
 
 # Write operations require authentication (recommended: true for production)
 # This protects POST/PUT/DELETE operations even when reads are public
-AUTH_REQUIRED_FOR_WRITES = os.getenv("AUTH_REQUIRED_FOR_WRITES", "true").lower() == "true"
+AUTH_REQUIRED_FOR_WRITES = (
+    os.getenv("AUTH_REQUIRED_FOR_WRITES", "true").lower() == "true"
+)
 
 # =============================================================================
 # JWT AUTHENTICATION (fallback/internal)
 # =============================================================================
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60480"))  # 7 days
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60480")
+)  # 7 days
 
 # =============================================================================
 # OAUTH STATE (CSRF protection)
@@ -186,8 +200,7 @@ AGENT_TIMEOUT = int(os.getenv("AGENT_TIMEOUT", "30"))
 MAX_THREAD_LENGTH = int(os.getenv("MAX_THREAD_LENGTH", "100"))
 USE_REAL_LLM = os.getenv("USE_REAL_LLM", "true").lower() == "true" or DEEPSEEK_ENABLED
 AGENTS_CONFIG_PATH = os.getenv(
-    "AGENTS_CONFIG_PATH",
-    str(BASE_DIR / "backend" / "agents.json")
+    "AGENTS_CONFIG_PATH", str(BASE_DIR / "backend" / "agents.json")
 )
 AGENTS_CONFIG_STRICT = os.getenv("AGENTS_CONFIG_STRICT", "false").lower() == "true"
 if AGENTS_CONFIG_PATH and not Path(AGENTS_CONFIG_PATH).is_absolute():
@@ -206,7 +219,9 @@ def print_config():
     print(f"Auth Required: {AUTH_REQUIRED}")
     print(f"\n--- Services Status ---")
     print(f"DeepSeek LLM: {'ENABLED' if DEEPSEEK_ENABLED else 'DISABLED (using mock)'}")
-    print(f"PostgreSQL DB: {'ENABLED' if DATABASE_ENABLED else 'DISABLED (using in-memory)'}")
+    print(
+        f"PostgreSQL DB: {'ENABLED' if DATABASE_ENABLED else 'DISABLED (using in-memory)'}"
+    )
     print(f"Serper Search: {'ENABLED' if SERPER_ENABLED else 'DISABLED'}")
     print(f"ScraperAPI: {'ENABLED' if SCRAPERAPI_ENABLED else 'DISABLED'}")
     print(f"KlingAI: {'ENABLED' if KLINGAI_ENABLED else 'DISABLED'}")

@@ -8,19 +8,18 @@
 
 import pytest
 import asyncio
-from typing import AsyncGenerator, Generator
+from typing import Generator
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
 
 from main import app
 from store import store
-from agents import reload_agents
-from models import Agent, Post, User
+from models import Agent, Post
 
 
 # =============================================================================
 # Test Configuration
 # =============================================================================
+
 
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
@@ -34,6 +33,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 # Client Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def client() -> TestClient:
     """Create a test client for the FastAPI app"""
@@ -43,14 +43,36 @@ def client() -> TestClient:
 @pytest.fixture
 def authenticated_client(client: TestClient) -> TestClient:
     """Create a client with authentication stub"""
-    # For now, just return the client
-    # TODO: Add actual authentication when implemented
-    return client
+    # Mock user payload for authentication
+    mock_user_payload = {
+        "sub": "test-user-123",
+        "name": "Test User",
+        "email": "test@example.com",
+        "picture": "https://example.com/avatar.jpg",
+    }
+
+    # Import the auth functions to override them
+    from middleware import auth_middleware
+
+    async def mock_get_optional():
+        return mock_user_payload
+
+    async def mock_get_current():
+        return mock_user_payload
+
+    app.dependency_overrides[auth_middleware.get_optional_user] = mock_get_optional
+    app.dependency_overrides[auth_middleware.get_current_user] = mock_get_current
+
+    yield client
+
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 # =============================================================================
 # Store Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def clean_store() -> None:
@@ -77,23 +99,20 @@ def sample_post() -> Post:
         id="test-post-1",
         text="Hello world! @grok what do you think?",
         author=store.current_user,
-        timestamp="2024-01-01T12:00:00Z"
+        timestamp="2024-01-01T12:00:00Z",
     )
 
 
 @pytest.fixture
 def sample_thread(sample_post: Post) -> dict:
     """Create a sample thread for testing"""
-    return {
-        "id": "thread-1",
-        "root_post": sample_post,
-        "replies": []
-    }
+    return {"id": "thread-1", "root_post": sample_post, "replies": []}
 
 
 # =============================================================================
 # Agent Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def mock_agents():
@@ -109,7 +128,7 @@ def mock_agents():
             tools=["test_tool"],
             color="#FF0000",
             icon="🧪",
-            mock_responses=["Test response: {context}"]
+            mock_responses=["Test response: {context}"],
         ),
         Agent(
             id="grok",
@@ -120,8 +139,8 @@ def mock_agents():
             style="Direct and witty",
             tools=["web_search"],
             color="#F59E0B",
-            icon="🚀"
-        )
+            icon="🚀",
+        ),
     ]
 
 
@@ -135,10 +154,12 @@ def mock_llm_response():
 # Service Mocks
 # =============================================================================
 
+
 @pytest.fixture
 def mock_llm_service():
     """Mock the LLM service"""
     from services import llm_service
+
     original_generate = llm_service.generate_agent_response
 
     async def mock_generate(*args, **kwargs):
@@ -155,6 +176,7 @@ def mock_llm_service():
 def mock_search_service():
     """Mock the search service"""
     from services import search_web
+
     original_search = search_web
 
     async def mock_search(query, num_results=10):
@@ -163,13 +185,14 @@ def mock_search_service():
                 {
                     "title": f"Test result for {query}",
                     "link": "https://example.com",
-                    "snippet": "This is a test search result"
+                    "snippet": "This is a test search result",
                 }
             ]
         }
 
     # Patch the search function
     import services
+
     services.search_web = mock_search
     yield services
 
@@ -181,6 +204,7 @@ def mock_search_service():
 def mock_email_service():
     """Mock the email service"""
     from services.email_service import email_service
+
     original_send = email_service.send_email
 
     async def mock_send(to, subject, html):
@@ -202,7 +226,7 @@ def mock_media_service():
             {
                 "url": "https://example.com/image.jpg",
                 "thumbnail": "https://example.com/thumb.jpg",
-                "source": "test"
+                "source": "test",
             }
         ]
 
@@ -213,6 +237,7 @@ def mock_media_service():
 # =============================================================================
 # Environment Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def test_env(monkeypatch):

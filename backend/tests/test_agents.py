@@ -16,6 +16,7 @@ from agents import list_agents, get_agent, Agent
 # Agent Loading Tests
 # =============================================================================
 
+
 class TestAgentLoading:
     """Tests for agent loading from configuration"""
 
@@ -51,6 +52,7 @@ class TestAgentLoading:
 # Agent Configuration Tests
 # =============================================================================
 
+
 class TestAgentConfiguration:
     """Tests for agent configuration structure"""
 
@@ -64,10 +66,7 @@ class TestAgentConfiguration:
 
     def test_agent_config_valid_json(self):
         """Test that agents.json is valid JSON"""
-        config_paths = [
-            Path("backend/agents.json"),
-            Path("agents.json")
-        ]
+        config_paths = [Path("backend/agents.json"), Path("agents.json")]
         config_path = None
         for p in config_paths:
             if p.exists():
@@ -97,6 +96,7 @@ class TestAgentConfiguration:
 # Agent Mock Response Tests
 # =============================================================================
 
+
 class TestAgentMockResponses:
     """Tests for agent mock response functionality"""
 
@@ -125,6 +125,7 @@ class TestAgentMockResponses:
 # Agent Filtering Tests
 # =============================================================================
 
+
 class TestAgentFiltering:
     """Tests for filtering agents by various criteria"""
 
@@ -151,17 +152,20 @@ class TestAgentFiltering:
 # Agent Reload Tests
 # =============================================================================
 
+
 class TestAgentReload:
     """Tests for agent reloading functionality"""
 
     def test_reload_agents_exists(self):
         """Test that reload_agents function exists"""
         from agents import reload_agents
+
         assert callable(reload_agents)
 
     def test_reload_agents(self):
         """Test reloading agents"""
         from agents import reload_agents
+
         # Count before reload
         before = len(list_agents())
         # Reload
