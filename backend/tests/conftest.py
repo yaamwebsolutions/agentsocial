@@ -8,14 +8,12 @@
 
 import pytest
 import asyncio
-from typing import AsyncGenerator, Generator
+from typing import Generator
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, MagicMock
 
 from main import app
 from store import store
-from agents import reload_agents
-from models import Agent, Post, User
+from models import Agent, Post
 
 
 # =============================================================================
@@ -43,9 +41,30 @@ def client() -> TestClient:
 @pytest.fixture
 def authenticated_client(client: TestClient) -> TestClient:
     """Create a client with authentication stub"""
-    # For now, just return the client
-    # TODO: Add actual authentication when implemented
-    return client
+    # Mock user payload for authentication
+    mock_user_payload = {
+        "sub": "test-user-123",
+        "name": "Test User",
+        "email": "test@example.com",
+        "picture": "https://example.com/avatar.jpg"
+    }
+
+    # Import the auth functions to override them
+    from middleware import auth_middleware
+
+    async def mock_get_optional():
+        return mock_user_payload
+
+    async def mock_get_current():
+        return mock_user_payload
+
+    app.dependency_overrides[auth_middleware.get_optional_user] = mock_get_optional
+    app.dependency_overrides[auth_middleware.get_current_user] = mock_get_current
+
+    yield client
+
+    # Clean up overrides
+    app.dependency_overrides.clear()
 
 
 # =============================================================================

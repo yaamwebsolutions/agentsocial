@@ -251,14 +251,29 @@ class Orchestrator:
         prompt = command.args['prompt']
 
         if not KLINGAI_ENABLED:
-            reply_text = f"🎬 **Video Generation**\n\n⚠️ Video generation service is not enabled. Please configure KLINGAI credentials.\n\nPrompt: *{prompt}*"
+            reply_text = (
+                f"🎬 **Video Generation**\n\n"
+                f"⚠️ Video generation service is not enabled. "
+                f"Please configure KLINGAI credentials.\n\n"
+                f"Prompt: *{prompt}*"
+            )
         else:
             result = await media_service.klingai.text_to_video(prompt)
             if result and 'data' in result:
                 video_url = result['data'].get('url', '')
-                reply_text = f"🎬 **Video Generated**\n\n**Prompt:** {prompt}\n\n[Watch Video]({video_url})\n\n✅ Video generation complete!"
+                reply_text = (
+                    f"🎬 **Video Generated**\n\n"
+                    f"**Prompt:** {prompt}\n\n"
+                    f"[Watch Video]({video_url})\n\n"
+                    f"✅ Video generation complete!"
+                )
             else:
-                reply_text = f"🎬 **Video Generation**\n\n⚠️ Failed to generate video. Please try again or check the prompt.\n\nPrompt: *{prompt}*"
+                reply_text = (
+                    f"🎬 **Video Generation**\n\n"
+                    f"⚠️ Failed to generate video. "
+                    f"Please try again or check the prompt.\n\n"
+                    f"Prompt: *{prompt}*"
+                )
 
         self.store.create_agent_reply(
             agent_handle="@video",
@@ -272,7 +287,12 @@ class Orchestrator:
         prompt = command.args['prompt']
 
         if not KLINGAI_ENABLED:
-            reply_text = f"🎨 **Image Generation**\n\n⚠️ Image generation service is not enabled. Please configure KLINGAI credentials.\n\nPrompt: *{prompt}*"
+            reply_text = (
+                f"🎨 **Image Generation**\n\n"
+                f"⚠️ Image generation service is not enabled. "
+                f"Please configure KLINGAI credentials.\n\n"
+                f"Prompt: *{prompt}*"
+            )
         else:
             result = await media_service.klingai.generate_image(prompt)
             if result and 'data' in result:
@@ -280,11 +300,25 @@ class Orchestrator:
                 images = result['data']
                 if images and len(images) > 0:
                     image_url = images[0].get('url', '')
-                    reply_text = f"🎨 **Image Generated**\n\n**Prompt:** {prompt}\n\n![Generated Image]({image_url})\n\n✅ Image generation complete!"
+                    reply_text = (
+                        f"🎨 **Image Generated**\n\n"
+                        f"**Prompt:** {prompt}\n\n"
+                        f"![Generated Image]({image_url})\n\n"
+                        f"✅ Image generation complete!"
+                    )
                 else:
-                    reply_text = f"🎨 **Image Generation**\n\n⚠️ No image returned. Please try again.\n\nPrompt: *{prompt}*"
+                    reply_text = (
+                        f"🎨 **Image Generation**\n\n"
+                        f"⚠️ No image returned. Please try again.\n\n"
+                        f"Prompt: *{prompt}*"
+                    )
             else:
-                reply_text = f"🎨 **Image Generation**\n\n⚠️ Failed to generate image. Please try again or check the prompt.\n\nPrompt: *{prompt}*"
+                reply_text = (
+                    f"🎨 **Image Generation**\n\n"
+                    f"⚠️ Failed to generate image. "
+                    f"Please try again or check the prompt.\n\n"
+                    f"Prompt: *{prompt}*"
+                )
 
         self.store.create_agent_reply(
             agent_handle="@image",
@@ -298,7 +332,12 @@ class Orchestrator:
         query = command.args['query']
 
         if not SERPER_ENABLED:
-            reply_text = f"🔍 **Web Search**\n\n⚠️ Search service is not enabled. Please configure SERPER_API_KEY.\n\nQuery: *{query}*"
+            reply_text = (
+                f"🔍 **Web Search**\n\n"
+                f"⚠️ Search service is not enabled. "
+                f"Please configure SERPER_API_KEY.\n\n"
+                f"Query: *{query}*"
+            )
         else:
             results = await search_web(query, num_results=5)
             if results and 'organic' in results:
@@ -309,9 +348,16 @@ class Orchestrator:
                     snippet = result.get('snippet', 'No description')
                     formatted_results.append(f"**[{title}]({link})**\n{snippet}")
 
-                reply_text = f"🔍 **Search Results for:** {query}\n\n" + "\n\n".join(formatted_results)
+                reply_text = (
+                    f"🔍 **Search Results for:** {query}\n\n" +
+                    "\n\n".join(formatted_results)
+                )
             else:
-                reply_text = f"🔍 **Web Search**\n\n⚠️ No results found. Please try a different query.\n\nQuery: *{query}*"
+                reply_text = (
+                    f"🔍 **Web Search**\n\n"
+                    f"⚠️ No results found. Please try a different query.\n\n"
+                    f"Query: *{query}*"
+                )
 
         self.store.create_agent_reply(
             agent_handle="@search",
@@ -325,7 +371,12 @@ class Orchestrator:
         url = command.args['url']
 
         if not SCRAPERAPI_ENABLED:
-            reply_text = f"📄 **Web Scraping**\n\n⚠️ Scraping service is not enabled. Please configure SCRAPERAPI_KEY.\n\nURL: {url}"
+            reply_text = (
+                f"📄 **Web Scraping**\n\n"
+                f"⚠️ Scraping service is not enabled. "
+                f"Please configure SCRAPERAPI_KEY.\n\n"
+                f"URL: {url}"
+            )
         else:
             content = await scraping_service.scrape_text(url, extract_links=True)
             if content:
@@ -335,9 +386,19 @@ class Orchestrator:
 
                 links_text = "\n".join([f"- {link}" for link in links]) if links else "No links found"
 
-                reply_text = f"📄 **Scraped:** {url}\n\n**Title:** {title}\n\n**Content:**\n{text}...\n\n**Links:**\n{links_text}"
+                reply_text = (
+                    f"📄 **Scraped:** {url}\n\n"
+                    f"**Title:** {title}\n\n"
+                    f"**Content:**\n{text}...\n\n"
+                    f"**Links:**\n{links_text}"
+                )
             else:
-                reply_text = f"📄 **Web Scraping**\n\n⚠️ Failed to scrape URL. Please check the URL and try again.\n\nURL: {url}"
+                reply_text = (
+                    f"📄 **Web Scraping**\n\n"
+                    f"⚠️ Failed to scrape URL. "
+                    f"Please check the URL and try again.\n\n"
+                    f"URL: {url}"
+                )
 
         self.store.create_agent_reply(
             agent_handle="@scrape",
@@ -355,10 +416,19 @@ class Orchestrator:
         if not content:
             # Remove the email command from the post text
             import re
-            content = re.sub(r'/email\s+\S+\s*', '', trigger_post.text).strip() or "No additional content"
+            content = re.sub(
+                r'/email\s+\S+\s*',
+                '',
+                trigger_post.text
+            ).strip() or "No additional content"
 
         if not RESEND_ENABLED:
-            reply_text = f"📧 **Email**\n\n⚠️ Email service is not enabled. Please configure RESEND_API_KEY.\n\nTo: {to_email}"
+            reply_text = (
+                f"📧 **Email**\n\n"
+                f"⚠️ Email service is not enabled. "
+                f"Please configure RESEND_API_KEY.\n\n"
+                f"To: {to_email}"
+            )
         else:
             # Create HTML email
             html = f"""
@@ -387,14 +457,24 @@ class Orchestrator:
 
             message_id = await email_service.send_email(
                 to=to_email,
-                subject=f"Message from AgentSocial",
+                subject="Message from AgentSocial",
                 html=html
             )
 
             if message_id:
-                reply_text = f"📧 **Email Sent**\n\n✅ Successfully sent email to: {to_email}\n\n**Message ID:** {message_id}\n\n**Content:** {content}"
+                reply_text = (
+                    f"📧 **Email Sent**\n\n"
+                    f"✅ Successfully sent email to: {to_email}\n\n"
+                    f"**Message ID:** {message_id}\n\n"
+                    f"**Content:** {content}"
+                )
             else:
-                reply_text = f"📧 **Email**\n\n⚠️ Failed to send email. Please check the recipient address and try again.\n\nTo: {to_email}"
+                reply_text = (
+                    f"📧 **Email**\n\n"
+                    f"⚠️ Failed to send email. "
+                    f"Please check the recipient address and try again.\n\n"
+                    f"To: {to_email}"
+                )
 
         self.store.create_agent_reply(
             agent_handle="@email",
