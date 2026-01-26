@@ -158,18 +158,25 @@ def mock_llm_response():
 @pytest.fixture
 def mock_llm_service():
     """Mock the LLM service"""
+    import main
     from services import llm_service
 
-    original_generate = llm_service.generate_agent_response
+    # Store both references
+    original_main_generate = main.generate_agent_response
+    original_llm_generate = llm_service.generate_agent_response
 
     async def mock_generate(*args, **kwargs):
         return "Mock LLM response for testing"
 
+    # Patch both references - the one in main.py (used by endpoints)
+    # and the one in llm_service module (used by orchestrator)
+    main.generate_agent_response = mock_generate
     llm_service.generate_agent_response = mock_generate
     yield llm_service
 
-    # Restore original
-    llm_service.generate_agent_response = original_generate
+    # Restore both
+    main.generate_agent_response = original_main_generate
+    llm_service.generate_agent_response = original_llm_generate
 
 
 @pytest.fixture
