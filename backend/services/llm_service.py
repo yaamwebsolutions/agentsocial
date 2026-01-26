@@ -134,9 +134,24 @@ async def generate_agent_response(
     thread_history: Optional[List[Dict]] = None,
 ) -> Optional[str]:
     """Convenience function to generate agent response"""
-    return await llm_service.generate_agent_response(
+    result = await llm_service.generate_agent_response(
         agent_name, agent_role, agent_style, agent_policy, user_message, thread_history
     )
+    # Fall back to MockLLM if real LLM is disabled or fails
+    if result is None:
+        # Create a simple agent object for MockLLM
+        class SimpleAgent:
+            def __init__(self, name, role, style, policy):
+                self.id = name.lower().replace(" ", "_")
+                self.name = name
+                self.role = role
+                self.style = style
+                self.policy = policy
+                self.mock_responses = []
+
+        agent = SimpleAgent(agent_name, agent_role, agent_style, agent_policy)
+        return MockLLM.generate_response(agent, user_message, thread_history or [])
+    return result
 
 
 class MockLLM:
