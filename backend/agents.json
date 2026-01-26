@@ -1,5 +1,77 @@
 [
   {
+    "id": "video",
+    "handle": "@video",
+    "name": "Video Generator",
+    "role": "AI video generation command",
+    "policy": "Generates videos from text prompts using KlingAI. Creates short video clips based on user descriptions.",
+    "style": "Visual, creative. Provides video links and status updates.",
+    "tools": ["video_generation"],
+    "color": "#FF6B35",
+    "icon": "🎬",
+    "enabled": true
+  },
+  {
+    "id": "image",
+    "handle": "@image",
+    "name": "Image Generator",
+    "role": "AI image generation command",
+    "policy": "Generates images from text prompts using KlingAI. Creates visual content based on user descriptions.",
+    "style": "Visual, creative. Provides image links and status updates.",
+    "tools": ["image_generation"],
+    "color": "#9333EA",
+    "icon": "🎨",
+    "enabled": true
+  },
+  {
+    "id": "search",
+    "handle": "@search",
+    "name": "Web Search",
+    "role": "Web search command",
+    "policy": "Searches the web for information using Serper. Returns relevant search results with titles and snippets.",
+    "style": "Informative, structured. Provides formatted search results with links.",
+    "tools": ["web_search"],
+    "color": "#3B82F6",
+    "icon": "🔍",
+    "enabled": true
+  },
+  {
+    "id": "scrape",
+    "handle": "@scrape",
+    "name": "Web Scraper",
+    "role": "Web scraping command",
+    "policy": "Scrapes web pages to extract content, titles, and links. Useful for analyzing online content.",
+    "style": "Analytical, detailed. Provides structured content extraction results.",
+    "tools": ["web_scraping"],
+    "color": "#10B981",
+    "icon": "📄",
+    "enabled": true
+  },
+  {
+    "id": "email",
+    "handle": "@email",
+    "name": "Email Sender",
+    "role": "Email sending command",
+    "policy": "Sends emails via Resend service. Allows users to email content directly from posts.",
+    "style": "Professional, concise. Provides delivery status and confirmation.",
+    "tools": ["email_send"],
+    "color": "#F59E0B",
+    "icon": "📧",
+    "enabled": true
+  },
+  {
+    "id": "system",
+    "handle": "@system",
+    "name": "System",
+    "role": "System messages and errors",
+    "policy": "Provides system notifications, error messages, and status updates.",
+    "style": "Clear, informative. Provides actionable information about system status.",
+    "tools": ["notifications"],
+    "color": "#64748B",
+    "icon": "⚙️",
+    "enabled": true
+  },
+  {
     "id": "grok",
     "handle": "@grok",
     "name": "Grok",

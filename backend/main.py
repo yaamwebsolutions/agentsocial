@@ -212,6 +212,11 @@ class EmailSendRequest(BaseModel):
     html: str
 
 
+class VideoGenerateRequest(BaseModel):
+    prompt: str
+    duration: int = 5
+
+
 class AgentPromptRequest(BaseModel):
     agent_handle: str
     prompt: str
@@ -520,6 +525,28 @@ async def search_videos(query: str, per_page: int = 10):
     """
     results = await media_service.search_videos(query, per_page)
     return {"query": query, "results": results}
+
+
+@app.post("/media/videos/generate", tags=["Media"])
+async def generate_video(request: VideoGenerateRequest):
+    """
+    Generate a video using KlingAI text-to-video.
+
+    Requires KLINGAI_ACCESS_KEY and KLINGAI_SECRET_KEY to be configured.
+
+    - **prompt**: The video generation prompt
+    - **duration**: Video duration in seconds (default: 5)
+    """
+    if not KLINGAI_ENABLED:
+        raise HTTPException(status_code=501, detail="Video generation service not enabled")
+
+    result = await media_service.klingai.text_to_video(
+        request.prompt, request.duration
+    )
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to generate video")
+
+    return {"prompt": request.prompt, "result": result}
 
 
 # =============================================================================
