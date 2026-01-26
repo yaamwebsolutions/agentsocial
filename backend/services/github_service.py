@@ -3,6 +3,7 @@ GitHub API Service
 Handles all interactions with GitHub's API including repository data,
 stargazers, commits, issues, releases, and search.
 """
+
 import os
 import httpx
 import logging
@@ -15,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 class GitHubAPIException(Exception):
     """Custom exception for GitHub API errors"""
+
     pass
 
 
 class RateLimitError(GitHubAPIException):
     """Raised when GitHub API rate limit is exceeded"""
+
     def __init__(self, reset_time: datetime):
         self.reset_time = reset_time
         super().__init__(f"Rate limit exceeded. Resets at {reset_time}")
@@ -35,10 +38,7 @@ class GitHubService:
 
     def __init__(self):
         self.token = os.getenv("GITHUB_TOKEN", "")
-        self.client = httpx.AsyncClient(
-            headers=self._get_headers(),
-            timeout=30.0
-        )
+        self.client = httpx.AsyncClient(headers=self._get_headers(), timeout=30.0)
         self._rate_limit_remaining = 5000
         self._rate_limit_reset = None
 
@@ -46,18 +46,13 @@ class GitHubService:
         """Get request headers with authorization if token is available"""
         headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "AgentTwitter/1.0"
+            "User-Agent": "AgentTwitter/1.0",
         }
         if self.token:
             headers["Authorization"] = f"token {self.token}"
         return headers
 
-    async def _make_request(
-        self,
-        method: str,
-        endpoint: str,
-        **kwargs
-    ) -> Any:
+    async def _make_request(self, method: str, endpoint: str, **kwargs) -> Any:
         """
         Make a request to GitHub API with rate limit handling.
 
@@ -131,10 +126,7 @@ class GitHubService:
         return data.get("stargazers_count", 0)
 
     async def get_stargazers(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 100
+        self, owner: str, repo: str, per_page: int = 100
     ) -> List[Dict[str, Any]]:
         """
         Get stargazers for a repository.
@@ -154,7 +146,7 @@ class GitHubService:
             data = await self._make_request(
                 "GET",
                 f"/repos/{owner}/{repo}/stargazers",
-                params={"page": page, "per_page": per_page}
+                params={"page": page, "per_page": per_page},
             )
             if not data:
                 break
@@ -166,11 +158,7 @@ class GitHubService:
         return stargazers
 
     async def get_commits(
-        self,
-        owner: str,
-        repo: str,
-        since: Optional[str] = None,
-        per_page: int = 30
+        self, owner: str, repo: str, since: Optional[str] = None, per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Get recent commits for a repository.
@@ -189,17 +177,11 @@ class GitHubService:
             params["since"] = since
 
         return await self._make_request(
-            "GET",
-            f"/repos/{owner}/{repo}/commits",
-            params=params
+            "GET", f"/repos/{owner}/{repo}/commits", params=params
         )
 
     async def get_issues(
-        self,
-        owner: str,
-        repo: str,
-        state: str = "open",
-        per_page: int = 30
+        self, owner: str, repo: str, state: str = "open", per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Get issues for a repository.
@@ -216,14 +198,11 @@ class GitHubService:
         return await self._make_request(
             "GET",
             f"/repos/{owner}/{repo}/issues",
-            params={"state": state, "per_page": per_page}
+            params={"state": state, "per_page": per_page},
         )
 
     async def get_releases(
-        self,
-        owner: str,
-        repo: str,
-        per_page: int = 30
+        self, owner: str, repo: str, per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Get releases for a repository.
@@ -237,16 +216,11 @@ class GitHubService:
             List of release dictionaries
         """
         return await self._make_request(
-            "GET",
-            f"/repos/{owner}/{repo}/releases",
-            params={"per_page": per_page}
+            "GET", f"/repos/{owner}/{repo}/releases", params={"per_page": per_page}
         )
 
     async def get_readme(
-        self,
-        owner: str,
-        repo: str,
-        default_branch: str = "main"
+        self, owner: str, repo: str, default_branch: str = "main"
     ) -> str:
         """
         Get README content for a repository.
@@ -264,7 +238,7 @@ class GitHubService:
             data = await self._make_request(
                 "GET",
                 f"/repos/{owner}/{repo}/readme",
-                headers={"Accept": "application/vnd.github.raw"}
+                headers={"Accept": "application/vnd.github.raw"},
             )
             return data
         except GitHubAPIException:
@@ -274,18 +248,14 @@ class GitHubService:
                     return await self._make_request(
                         "GET",
                         f"/repos/{owner}/{repo}/contents/{filename}",
-                        headers={"Accept": "application/vnd.github.raw"}
+                        headers={"Accept": "application/vnd.github.raw"},
                     )
                 except GitHubAPIException:
                     continue
             return ""
 
     async def search_repositories(
-        self,
-        query: str,
-        sort: str = "stars",
-        order: str = "desc",
-        per_page: int = 30
+        self, query: str, sort: str = "stars", order: str = "desc", per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Search for repositories on GitHub.
@@ -302,12 +272,7 @@ class GitHubService:
         return await self._make_request(
             "GET",
             "/search/repositories",
-            params={
-                "q": query,
-                "sort": sort,
-                "order": order,
-                "per_page": per_page
-            }
+            params={"q": query, "sort": sort, "order": order, "per_page": per_page},
         )
 
     async def get_user_profile(self, username: str) -> Dict[str, Any]:
@@ -323,10 +288,7 @@ class GitHubService:
         return await self._make_request("GET", f"/users/{username}")
 
     async def get_user_repos(
-        self,
-        username: str,
-        type: str = "owner",
-        per_page: int = 30
+        self, username: str, type: str = "owner", per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Get repositories for a user.
@@ -342,13 +304,11 @@ class GitHubService:
         return await self._make_request(
             "GET",
             f"/users/{username}/repos",
-            params={"type": type, "per_page": per_page, "sort": "updated"}
+            params={"type": type, "per_page": per_page, "sort": "updated"},
         )
 
     async def get_user_repos_authed(
-        self,
-        visibility: str = "public",
-        per_page: int = 30
+        self, visibility: str = "public", per_page: int = 30
     ) -> List[Dict[str, Any]]:
         """
         Get repositories for authenticated user.
@@ -363,7 +323,7 @@ class GitHubService:
         return await self._make_request(
             "GET",
             "/user/repos",
-            params={"visibility": visibility, "per_page": per_page, "sort": "updated"}
+            params={"visibility": visibility, "per_page": per_page, "sort": "updated"},
         )
 
     async def get_languages(self, owner: str, repo: str) -> Dict[str, int]:
@@ -396,6 +356,7 @@ class GitHubService:
 
 # Global instance
 github_service = GitHubService()
+
 
 def get_github_service() -> GitHubService:
     """Get the global GitHub service instance"""

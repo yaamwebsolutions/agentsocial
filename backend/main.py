@@ -2,6 +2,7 @@
 Agent Twitter API - FastAPI Backend
 Main application with environment-based configuration.
 """
+
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,19 +12,37 @@ import uvicorn
 import jwt
 
 from models import (
-    Thread, TimelinePost, Agent, CreatePostRequest,
-    CreatePostResponse, User, UserStats
+    Thread,
+    TimelinePost,
+    Agent,
+    CreatePostRequest,
+    CreatePostResponse,
+    User,
+    UserStats,
 )
 from middleware.auth_middleware import get_current_user, get_optional_user
 from agents import list_agents, get_agent
 from store import store
 from orchestrator import orchestrator
 from config import (
-    APP_NAME, APP_ENV, APP_VERSION, BACKEND_HOST, BACKEND_PORT,
-    CORS_ORIGINS, BACKEND_LOG_LEVEL, DEEPSEEK_ENABLED,
-    DATABASE_ENABLED, SERPER_ENABLED, SCRAPERAPI_ENABLED,
-    KLINGAI_ENABLED, RESEND_ENABLED, AUTH0_ENABLED, GITHUB_ENABLED,
-    AUTH_REQUIRED, AUTH_REQUIRED_FOR_WRITES, print_config
+    APP_NAME,
+    APP_ENV,
+    APP_VERSION,
+    BACKEND_HOST,
+    BACKEND_PORT,
+    CORS_ORIGINS,
+    BACKEND_LOG_LEVEL,
+    DEEPSEEK_ENABLED,
+    DATABASE_ENABLED,
+    SERPER_ENABLED,
+    SCRAPERAPI_ENABLED,
+    KLINGAI_ENABLED,
+    RESEND_ENABLED,
+    AUTH0_ENABLED,
+    GITHUB_ENABLED,
+    AUTH_REQUIRED,
+    AUTH_REQUIRED_FOR_WRITES,
+    print_config,
 )
 from services import search_web
 from services.oauth_state import generate_oauth_state, verify_oauth_state
@@ -36,7 +55,7 @@ from monitoring import monitoring
 # Configure logging
 logging.basicConfig(
     level=getattr(logging, BACKEND_LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -172,10 +191,7 @@ async def require_user_for_write(
         raise HTTPException(
             status_code=401,
             detail="Authentication required to create posts. Please log in first.",
-            headers={
-                "WWW-Authenticate": "Bearer",
-                "X-Auth-Required": "write"
-            },
+            headers={"WWW-Authenticate": "Bearer", "X-Auth-Required": "write"},
         )
     return payload
 
@@ -183,6 +199,7 @@ async def require_user_for_write(
 # =============================================================================
 # REQUEST MODELS
 # =============================================================================
+
 
 class SearchRequest(BaseModel):
     query: str
@@ -226,6 +243,7 @@ class AgentPromptRequest(BaseModel):
 # POSTS ENDPOINTS
 # =============================================================================
 
+
 @app.post("/posts", response_model=CreatePostResponse, tags=["Posts"])
 async def create_post(
     request: CreatePostRequest,
@@ -260,7 +278,9 @@ async def get_thread(thread_id: str):
 
 
 @app.get("/timeline", response_model=List[TimelinePost], tags=["Posts"])
-async def get_timeline(limit: int = 50, _user: Optional[dict] = Depends(get_optional_user)):
+async def get_timeline(
+    limit: int = 50, _user: Optional[dict] = Depends(get_optional_user)
+):
     """
     Get timeline posts (root posts only).
 
@@ -272,7 +292,9 @@ async def get_timeline(limit: int = 50, _user: Optional[dict] = Depends(get_opti
 
 
 @app.post("/posts/{post_id}/like", tags=["Posts"])
-async def like_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+async def like_post(
+    post_id: str, _user: Optional[dict] = Depends(require_user_for_write)
+):
     """
     Like a post.
 
@@ -289,12 +311,14 @@ async def like_post(post_id: str, _user: Optional[dict] = Depends(require_user_f
     return {
         "liked": liked,
         "like_count": like_info["like_count"],
-        "is_liked": like_info["is_liked"]
+        "is_liked": like_info["is_liked"],
     }
 
 
 @app.post("/posts/{post_id}/unlike", tags=["Posts"])
-async def unlike_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+async def unlike_post(
+    post_id: str, _user: Optional[dict] = Depends(require_user_for_write)
+):
     """
     Unlike a post.
 
@@ -311,12 +335,14 @@ async def unlike_post(post_id: str, _user: Optional[dict] = Depends(require_user
     return {
         "unliked": unliked,
         "like_count": like_info["like_count"],
-        "is_liked": like_info["is_liked"]
+        "is_liked": like_info["is_liked"],
     }
 
 
 @app.delete("/posts/{post_id}", tags=["Posts"])
-async def delete_post(post_id: str, _user: Optional[dict] = Depends(require_user_for_write)):
+async def delete_post(
+    post_id: str, _user: Optional[dict] = Depends(require_user_for_write)
+):
     """
     Delete a post.
 
@@ -338,6 +364,7 @@ async def delete_post(post_id: str, _user: Optional[dict] = Depends(require_user
 # =============================================================================
 # AGENTS ENDPOINTS
 # =============================================================================
+
 
 @app.get("/agents", response_model=List[Agent], tags=["Agents"])
 async def get_agents():
@@ -375,7 +402,7 @@ async def prompt_agent(request: AgentPromptRequest):
     - **agent_handle**: The agent's @handle (with or without @)
     - **prompt**: The message to send to the agent
     """
-    agent = get_agent(request.agent_handle.lstrip('@'))
+    agent = get_agent(request.agent_handle.lstrip("@"))
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -385,7 +412,7 @@ async def prompt_agent(request: AgentPromptRequest):
         agent_style=agent.style,
         agent_policy=agent.policy,
         user_message=request.prompt,
-        thread_history=[]
+        thread_history=[],
     )
 
     if not response:
@@ -397,6 +424,7 @@ async def prompt_agent(request: AgentPromptRequest):
 # =============================================================================
 # SEARCH ENDPOINTS
 # =============================================================================
+
 
 @app.post("/search/web", tags=["Search"])
 async def web_search(request: SearchRequest):
@@ -414,12 +442,14 @@ async def web_search(request: SearchRequest):
         return {"query": request.query, "results": []}
 
     formatted = []
-    for result in results.get("organic", [])[:request.num_results]:
-        formatted.append({
-            "title": result.get("title", ""),
-            "link": result.get("link", ""),
-            "snippet": result.get("snippet", ""),
-        })
+    for result in results.get("organic", [])[: request.num_results]:
+        formatted.append(
+            {
+                "title": result.get("title", ""),
+                "link": result.get("link", ""),
+                "snippet": result.get("snippet", ""),
+            }
+        )
 
     return {"query": request.query, "results": formatted}
 
@@ -440,6 +470,7 @@ async def image_search(query: str, per_page: int = 10):
 # SCRAPING ENDPOINTS
 # =============================================================================
 
+
 @app.post("/scrape", tags=["Scraping"])
 async def scrape_webpage(request: ScrapeRequest):
     """
@@ -454,9 +485,7 @@ async def scrape_webpage(request: ScrapeRequest):
     if not SCRAPERAPI_ENABLED:
         raise HTTPException(status_code=501, detail="Scraping service not enabled")
 
-    content = await scraping_service.scrape_text(
-        request.url, request.extract_links
-    )
+    content = await scraping_service.scrape_text(request.url, request.extract_links)
     if not content:
         raise HTTPException(status_code=500, detail="Failed to scrape URL")
 
@@ -464,13 +493,14 @@ async def scrape_webpage(request: ScrapeRequest):
         "url": request.url,
         "title": content.get("title", ""),
         "content": content.get("text", "")[:5000],
-        "links": content.get("links", []) if request.extract_links else []
+        "links": content.get("links", []) if request.extract_links else [],
     }
 
 
 # =============================================================================
 # MEDIA ENDPOINTS
 # =============================================================================
+
 
 @app.post("/media/images/generate", tags=["Media"])
 async def generate_image(request: ImageGenerateRequest):
@@ -484,7 +514,9 @@ async def generate_image(request: ImageGenerateRequest):
     - **num_images**: Number of images to generate
     """
     if not KLINGAI_ENABLED:
-        raise HTTPException(status_code=501, detail="Image generation service not enabled")
+        raise HTTPException(
+            status_code=501, detail="Image generation service not enabled"
+        )
 
     result = await media_service.klingai.generate_image(
         request.prompt, request.image_size, request.num_images
@@ -538,11 +570,11 @@ async def generate_video(request: VideoGenerateRequest):
     - **duration**: Video duration in seconds (default: 5)
     """
     if not KLINGAI_ENABLED:
-        raise HTTPException(status_code=501, detail="Video generation service not enabled")
+        raise HTTPException(
+            status_code=501, detail="Video generation service not enabled"
+        )
 
-    result = await media_service.klingai.text_to_video(
-        request.prompt, request.duration
-    )
+    result = await media_service.klingai.text_to_video(request.prompt, request.duration)
     if not result:
         raise HTTPException(status_code=500, detail="Failed to generate video")
 
@@ -552,6 +584,7 @@ async def generate_video(request: VideoGenerateRequest):
 # =============================================================================
 # EMAIL ENDPOINTS
 # =============================================================================
+
 
 @app.post("/email/send", tags=["Email"])
 async def send_email(request: EmailSendRequest):
@@ -568,9 +601,7 @@ async def send_email(request: EmailSendRequest):
         raise HTTPException(status_code=501, detail="Email service not enabled")
 
     message_id = await email_service.send_email(
-        to=request.to,
-        subject=request.subject,
-        html=request.html
+        to=request.to, subject=request.subject, html=request.html
     )
 
     if not message_id:
@@ -582,6 +613,7 @@ async def send_email(request: EmailSendRequest):
 # =============================================================================
 # USER ENDPOINTS
 # =============================================================================
+
 
 @app.get("/me", response_model=User, tags=["Users"])
 async def get_current_app_user():
@@ -616,6 +648,7 @@ async def get_user_posts(user_id: str, limit: int = 50):
 # =============================================================================
 # AGENT RUNS ENDPOINTS
 # =============================================================================
+
 
 @app.get("/threads/{thread_id}/agent-runs", tags=["Posts"])
 async def get_thread_agent_runs(thread_id: str):
@@ -665,17 +698,21 @@ async def stream_thread_updates(thread_id: str):
                     for run_id in new_runs:
                         run = next((r for r in active_runs if r.id == run_id), None)
                         if run:
-                            data = json.dumps({
-                                "type": "agent_run",
-                                "data": {
-                                    "id": run.id,
-                                    "agent_handle": run.agent_handle,
-                                    "status": run.status,
-                                    "thread_id": run.thread_id,
-                                    "trigger_post_id": run.trigger_post_id,
-                                    "started_at": run.started_at.isoformat() if hasattr(run.started_at, 'isoformat') else run.started_at,
+                            data = json.dumps(
+                                {
+                                    "type": "agent_run",
+                                    "data": {
+                                        "id": run.id,
+                                        "agent_handle": run.agent_handle,
+                                        "status": run.status,
+                                        "thread_id": run.thread_id,
+                                        "trigger_post_id": run.trigger_post_id,
+                                        "started_at": run.started_at.isoformat()
+                                        if hasattr(run.started_at, "isoformat")
+                                        else run.started_at,
+                                    },
                                 }
-                            })
+                            )
                             yield f"event: agent_run\ndata: {data}\n\n"
                     seen_runs.update(new_runs)
 
@@ -685,40 +722,52 @@ async def stream_thread_updates(thread_id: str):
                         # Get latest run data from store
                         latest_run = store.get_agent_run(run.id)
                         if latest_run and latest_run.status != run.status:
-                            data = json.dumps({
-                                "type": "agent_status_change",
-                                "data": {
-                                    "id": latest_run.id,
-                                    "agent_handle": latest_run.agent_handle,
-                                    "status": latest_run.status,
-                                    "thread_id": latest_run.thread_id,
-                                    "ended_at": latest_run.ended_at.isoformat() if latest_run.ended_at else None,
+                            data = json.dumps(
+                                {
+                                    "type": "agent_status_change",
+                                    "data": {
+                                        "id": latest_run.id,
+                                        "agent_handle": latest_run.agent_handle,
+                                        "status": latest_run.status,
+                                        "thread_id": latest_run.thread_id,
+                                        "ended_at": latest_run.ended_at.isoformat()
+                                        if latest_run.ended_at
+                                        else None,
+                                    },
                                 }
-                            })
+                            )
                             yield f"event: agent_status_change\ndata: {data}\n\n"
 
                 # Check for new posts in the thread
                 thread = store.get_thread(thread_id)
                 if thread:
-                    current_post_ids = {p.id for p in [thread.root_post] + thread.replies}
+                    current_post_ids = {
+                        p.id for p in [thread.root_post] + thread.replies
+                    }
                     new_posts = current_post_ids - seen_posts
 
                     if new_posts:
                         for post in [thread.root_post] + thread.replies:
                             if post.id in new_posts and post.id != last_new_post_id:
-                                data = json.dumps({
-                                    "type": "new_post",
-                                    "data": {
-                                        "id": post.id,
-                                        "author_handle": post.author_handle,
-                                        "author_type": post.author_type.value if hasattr(post.author_type, 'value') else post.author_type,
-                                        "text": post.text,
-                                        "created_at": post.created_at.isoformat() if hasattr(post.created_at, 'isoformat') else post.created_at,
-                                        "parent_id": post.parent_id,
-                                        "thread_id": post.thread_id,
-                                        "mentions": post.mentions or [],
+                                data = json.dumps(
+                                    {
+                                        "type": "new_post",
+                                        "data": {
+                                            "id": post.id,
+                                            "author_handle": post.author_handle,
+                                            "author_type": post.author_type.value
+                                            if hasattr(post.author_type, "value")
+                                            else post.author_type,
+                                            "text": post.text,
+                                            "created_at": post.created_at.isoformat()
+                                            if hasattr(post.created_at, "isoformat")
+                                            else post.created_at,
+                                            "parent_id": post.parent_id,
+                                            "thread_id": post.thread_id,
+                                            "mentions": post.mentions or [],
+                                        },
                                     }
-                                })
+                                )
                                 yield f"event: new_post\ndata: {data}\n\n"
                                 last_new_post_id = post.id
 
@@ -746,7 +795,7 @@ async def stream_thread_updates(thread_id: str):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
-        }
+        },
     )
 
 
@@ -764,6 +813,7 @@ async def retry_agent_run(run_id: str):
 # HEALTH & STATUS ENDPOINTS
 # =============================================================================
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """
@@ -775,7 +825,7 @@ async def health_check():
         "status": "ok",
         "app": APP_NAME,
         "version": APP_VERSION,
-        "environment": APP_ENV
+        "environment": APP_ENV,
     }
 
 
@@ -800,7 +850,7 @@ async def get_status():
             "resend_email": "enabled" if RESEND_ENABLED else "disabled",
             "auth0": "enabled" if AUTH0_ENABLED else "disabled",
             "github": "enabled" if GITHUB_ENABLED else "disabled",
-        }
+        },
     }
 
 
@@ -825,19 +875,20 @@ async def root():
             "media": "/media/images/generate, /media/images/search",
             "email": "/email/send",
             "health": "/health",
-            "status": "/status"
+            "status": "/status",
         },
         "documentation": {
             "swagger": "/docs",
             "redoc": "/redoc",
-            "openapi": "/openapi.json"
-        }
+            "openapi": "/openapi.json",
+        },
     }
 
 
 # =============================================================================
 # MONITORING & METRICS ENDPOINTS
 # =============================================================================
+
 
 @app.get("/metrics", tags=["Health"])
 async def get_metrics(since_minutes: Optional[int] = None):
@@ -848,6 +899,7 @@ async def get_metrics(since_minutes: Optional[int] = None):
     Use `since_minutes` to get metrics from a specific time window.
     """
     from datetime import timedelta
+
     since = timedelta(minutes=since_minutes) if since_minutes else None
     return monitoring.get_metrics(since=since)
 
@@ -884,6 +936,7 @@ async def monitoring_status():
 # AUTHENTICATION ENDPOINTS
 # =============================================================================
 
+
 @app.get("/auth/github/login", tags=["Authentication"])
 async def github_login(redirect_uri: Optional[str] = None):
     """
@@ -899,6 +952,7 @@ async def github_login(redirect_uri: Optional[str] = None):
         Dictionary with the authorization URL and state
     """
     from services.auth_service import get_auth_service
+
     auth_service = get_auth_service()
 
     # Generate state for CSRF protection
@@ -909,10 +963,7 @@ async def github_login(redirect_uri: Optional[str] = None):
 
     auth_url = auth_service.get_github_auth_url(state, redirect_uri=final_redirect_uri)
 
-    return {
-        "auth_url": auth_url,
-        "state": state
-    }
+    return {"auth_url": auth_url, "state": state}
 
 
 @app.get("/auth/github/callback", tags=["Authentication"])
@@ -931,6 +982,7 @@ async def github_callback(code: str, state: str):
         Dictionary with access_token and user information
     """
     from services.auth_service import get_auth_service
+
     auth_service = get_auth_service()
 
     try:
@@ -946,10 +998,7 @@ async def github_callback(code: str, state: str):
         # Create user session and JWT
         access_token, auth_user = auth_service.create_user_session(github_user)
 
-        return {
-            "access_token": access_token,
-            "user": auth_user.dict()
-        }
+        return {"access_token": access_token, "user": auth_user.dict()}
 
     except Exception as e:
         logger.error(f"GitHub OAuth error: {e}")
@@ -973,6 +1022,7 @@ async def github_callback_post(request: dict):
         Dictionary with access_token and user information
     """
     from services.auth_service import get_auth_service
+
     auth_service = get_auth_service()
 
     code = request.get("code")
@@ -987,7 +1037,9 @@ async def github_callback_post(request: dict):
 
     try:
         # Exchange code for access token (with matching redirect_uri)
-        token_response = await auth_service.exchange_code_for_token(code, state, redirect_uri=redirect_uri)
+        token_response = await auth_service.exchange_code_for_token(
+            code, state, redirect_uri=redirect_uri
+        )
 
         # Get user profile from GitHub
         github_user = await auth_service.get_github_user(token_response.access_token)
@@ -995,10 +1047,7 @@ async def github_callback_post(request: dict):
         # Create user session and JWT
         access_token, auth_user = auth_service.create_user_session(github_user)
 
-        return {
-            "access_token": access_token,
-            "user": auth_user.dict()
-        }
+        return {"access_token": access_token, "user": auth_user.dict()}
 
     except Exception as e:
         logger.error(f"GitHub OAuth error: {e}")
@@ -1017,9 +1066,7 @@ async def logout():
 
 
 @app.get("/auth/me", tags=["Authentication"])
-async def get_authenticated_user(
-    payload: dict = Depends(get_current_user)
-):
+async def get_authenticated_user(payload: dict = Depends(get_current_user)):
     """
     Get currently authenticated user.
 
@@ -1033,9 +1080,7 @@ async def get_authenticated_user(
 
 
 @app.get("/me", tags=["Authentication"])
-async def get_authenticated_user_alias(
-    payload: dict = Depends(get_current_user)
-):
+async def get_authenticated_user_alias(payload: dict = Depends(get_current_user)):
     """Alias for /auth/me to keep frontend compatible."""
     return payload
 
@@ -1044,11 +1089,12 @@ async def get_authenticated_user_alias(
 # AUTH0 ENDPOINTS
 # =============================================================================
 
+
 @app.get("/auth0/login", tags=["Authentication"])
 async def auth0_login(
     redirect_uri: Optional[str] = None,
     connection: Optional[str] = None,
-    state: Optional[str] = None
+    state: Optional[str] = None,
 ):
     """
     Get Auth0 login URL.
@@ -1065,6 +1111,7 @@ async def auth0_login(
         Dictionary with the login URL
     """
     from services.auth0_service import get_auth0_service
+
     auth0_service = get_auth0_service()
 
     if not auth0_service.enabled:
@@ -1079,15 +1126,10 @@ async def auth0_login(
         redirect_uri = "https://yaam.click/callback"
 
     login_url = auth0_service.get_login_url(
-        redirect_uri=redirect_uri,
-        state=final_state,
-        connection=connection
+        redirect_uri=redirect_uri, state=final_state, connection=connection
     )
 
-    return {
-        "login_url": login_url,
-        "state": final_state
-    }
+    return {"login_url": login_url, "state": final_state}
 
 
 @app.post("/auth0/callback", tags=["Authentication"])
@@ -1105,6 +1147,7 @@ async def auth0_callback(request: dict):
         Dictionary with access_token, id_token, and user information
     """
     from services.auth0_service import get_auth0_service
+
     auth0_service = get_auth0_service()
 
     if not auth0_service.enabled:
@@ -1133,24 +1176,19 @@ async def auth0_callback(request: dict):
 
     if not user_info:
         # Decode id_token as fallback
-        user_info = jwt.decode(
-            id_token,
-            options={"verify_signature": False}
-        )
+        user_info = jwt.decode(id_token, options={"verify_signature": False})
 
     return {
         "access_token": access_token,
         "id_token": id_token,
         "token_type": token_response.get("token_type", "Bearer"),
         "expires_in": token_response.get("expires_in"),
-        "user": auth0_service.normalize_user(user_info)
+        "user": auth0_service.normalize_user(user_info),
     }
 
 
 @app.get("/auth0/user", tags=["Authentication"])
-async def auth0_get_user(
-    payload: dict = Depends(get_current_user)
-):
+async def auth0_get_user(payload: dict = Depends(get_current_user)):
     """
     Get Auth0 user info.
 
@@ -1178,6 +1216,7 @@ async def auth0_logout(return_to: str = "https://yaam.click"):
         Dictionary with the logout URL
     """
     from services.auth0_service import get_auth0_service
+
     auth0_service = get_auth0_service()
 
     if not auth0_service.enabled:
@@ -1185,14 +1224,13 @@ async def auth0_logout(return_to: str = "https://yaam.click"):
 
     logout_url = auth0_service.get_logout_url(return_to=return_to)
 
-    return {
-        "logout_url": logout_url
-    }
+    return {"logout_url": logout_url}
 
 
 # =============================================================================
 # STARTUP
 # =============================================================================
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -1211,8 +1249,5 @@ if __name__ == "__main__":
     logger.info("Tip: Run 'python seed.py' to create example posts")
 
     uvicorn.run(
-        app,
-        host=BACKEND_HOST,
-        port=BACKEND_PORT,
-        log_level=BACKEND_LOG_LEVEL.lower()
+        app, host=BACKEND_HOST, port=BACKEND_PORT, log_level=BACKEND_LOG_LEVEL.lower()
     )

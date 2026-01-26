@@ -15,6 +15,7 @@ from models import Post, User
 # Store Initialization Tests
 # =============================================================================
 
+
 class TestStoreInitialization:
     """Tests for store initialization"""
 
@@ -39,6 +40,7 @@ class TestStoreInitialization:
 # =============================================================================
 # Post Management Tests
 # =============================================================================
+
 
 class TestPostManagement:
     """Tests for post creation and retrieval"""
@@ -74,6 +76,7 @@ class TestPostManagement:
 # Thread Management Tests
 # =============================================================================
 
+
 class TestThreadManagement:
     """Tests for thread creation and retrieval"""
 
@@ -102,6 +105,7 @@ class TestThreadManagement:
 # Timeline Tests
 # =============================================================================
 
+
 class TestTimeline:
     """Tests for timeline functionality"""
 
@@ -121,12 +125,13 @@ class TestTimeline:
         # Check that posts are in reverse chronological order
         if len(posts) > 1:
             for i in range(len(posts) - 1):
-                assert posts[i].created_at >= posts[i+1].created_at
+                assert posts[i].created_at >= posts[i + 1].created_at
 
 
 # =============================================================================
 # Agent Run Tests
 # =============================================================================
+
 
 class TestAgentRuns:
     """Tests for agent run tracking"""
@@ -149,6 +154,7 @@ class TestAgentRuns:
 # =============================================================================
 # User Tests
 # =============================================================================
+
 
 class TestUser:
     """Tests for user data"""

@@ -2,14 +2,18 @@
 Auth0 Authentication Service
 Handles Auth0 JWT validation and user management.
 """
+
 import json
 import httpx
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import jwt
 from config import (
-    AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET,
-    AUTH0_AUDIENCE, AUTH0_ENABLED
+    AUTH0_DOMAIN,
+    AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET,
+    AUTH0_AUDIENCE,
+    AUTH0_ENABLED,
 )
 
 
@@ -89,7 +93,11 @@ class Auth0Service:
             # Use audience for validation only if it's a valid, non-placeholder value
             # This matches the logic in get_login_url
             valid_audience = None
-            if self.audience and self.audience.strip() and self.audience not in ("****", "YOUR_API_AUDIENCE"):
+            if (
+                self.audience
+                and self.audience.strip()
+                and self.audience not in ("****", "YOUR_API_AUDIENCE")
+            ):
                 valid_audience = self.audience
 
             # Validate token - if no valid audience, use client_id as default
@@ -99,10 +107,7 @@ class Auth0Service:
                 algorithms=["RS256"],
                 audience=valid_audience or self.client_id,
                 issuer=self.issuer,
-                options={
-                    "verify_aud": bool(valid_audience),
-                    "verify_iss": True
-                }
+                options={"verify_aud": bool(valid_audience), "verify_iss": True},
             )
 
             return payload
@@ -112,10 +117,12 @@ class Auth0Service:
         except jwt.InvalidTokenError as e:
             # Log for debugging but don't expose errors
             import logging
+
             logging.getLogger(__name__).warning(f"Auth0 token validation failed: {e}")
             return None
         except Exception as e:
             import logging
+
             logging.getLogger(__name__).error(f"Auth0 token validation error: {e}")
             return None
 
@@ -136,7 +143,7 @@ class Auth0Service:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.issuer}/userinfo",
-                    headers={"Authorization": f"Bearer {token}"}
+                    headers={"Authorization": f"Bearer {token}"},
                 )
                 response.raise_for_status()
                 return response.json()
@@ -169,7 +176,7 @@ class Auth0Service:
                         "client_secret": self.client_secret,
                         "code": code,
                         "redirect_uri": redirect_uri,
-                    }
+                    },
                 )
                 response.raise_for_status()
                 return response.json()
@@ -181,7 +188,7 @@ class Auth0Service:
         redirect_uri: str,
         state: Optional[str] = None,
         connection: Optional[str] = None,
-        scope: str = "openid profile email"
+        scope: str = "openid profile email",
     ) -> str:
         """
         Get the Auth0 universal login URL.
@@ -210,16 +217,16 @@ class Auth0Service:
             params["connection"] = connection
         # Only include audience if it's a valid, non-empty, non-placeholder value
         # This avoids the "Service not found" error when audience is misconfigured
-        if self.audience and self.audience.strip() and self.audience not in ("****", "YOUR_API_AUDIENCE"):
+        if (
+            self.audience
+            and self.audience.strip()
+            and self.audience not in ("****", "YOUR_API_AUDIENCE")
+        ):
             params["audience"] = self.audience
 
         return f"{self.issuer}/authorize?{urlencode(params)}"
 
-    def get_logout_url(
-        self,
-        return_to: str,
-        client_id: Optional[str] = None
-    ) -> str:
+    def get_logout_url(self, return_to: str, client_id: Optional[str] = None) -> str:
         """
         Get the Auth0 logout URL.
 

@@ -2,6 +2,7 @@
 Authentication Service
 Handles GitHub OAuth flow and JWT token management.
 """
+
 import os
 import secrets
 import httpx
@@ -18,8 +19,10 @@ logger = logging.getLogger(__name__)
 # PYDANTIC MODELS
 # =============================================================================
 
+
 class GitHubUser(BaseModel):
     """GitHub user profile data"""
+
     id: int
     login: str
     name: Optional[str] = None
@@ -36,6 +39,7 @@ class GitHubUser(BaseModel):
 
 class OAuthTokenResponse(BaseModel):
     """GitHub OAuth token response"""
+
     access_token: str
     token_type: str = "bearer"
     scope: Optional[str] = None
@@ -43,6 +47,7 @@ class OAuthTokenResponse(BaseModel):
 
 class AuthUser(BaseModel):
     """Authenticated user data"""
+
     id: str
     github_id: int
     github_login: str
@@ -56,6 +61,7 @@ class AuthUser(BaseModel):
 
 class JWTPayload(BaseModel):
     """JWT token payload"""
+
     sub: str  # user ID
     github_id: int
     github_login: str
@@ -69,16 +75,21 @@ class JWTPayload(BaseModel):
 
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
-GITHUB_OAUTH_CALLBACK_URL = os.getenv("GITHUB_OAUTH_CALLBACK_URL", "http://localhost:8000/auth/github/callback")
+GITHUB_OAUTH_CALLBACK_URL = os.getenv(
+    "GITHUB_OAUTH_CALLBACK_URL", "http://localhost:8000/auth/github/callback"
+)
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60480"))  # 7 days
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60480")
+)  # 7 days
 
 
 # =============================================================================
 # JWT SERVICE
 # =============================================================================
+
 
 class JWTService:
     """Service for JWT token generation and validation"""
@@ -105,11 +116,7 @@ class JWTService:
         import jwt
 
         try:
-            payload = jwt.decode(
-                token,
-                JWT_SECRET_KEY,
-                algorithms=[JWT_ALGORITHM]
-            )
+            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
             return JWTPayload(**payload)
         except jwt.ExpiredSignatureError:
             logger.warning("Token expired")
@@ -123,6 +130,7 @@ class JWTService:
 # OAUTH SERVICE
 # =============================================================================
 
+
 class AuthService:
     """Service for handling GitHub OAuth flow"""
 
@@ -131,7 +139,9 @@ class AuthService:
         self.client_secret = GITHUB_CLIENT_SECRET
         self.redirect_uri = GITHUB_OAUTH_CALLBACK_URL
 
-    def get_github_auth_url(self, state: Optional[str] = None, redirect_uri: Optional[str] = None) -> str:
+    def get_github_auth_url(
+        self, state: Optional[str] = None, redirect_uri: Optional[str] = None
+    ) -> str:
         """
         Generate GitHub OAuth authorization URL.
 
@@ -161,7 +171,9 @@ class AuthService:
         """Format parameters as URL query string"""
         return "&".join(f"{k}={v}" for k, v in params.items())
 
-    async def exchange_code_for_token(self, code: str, state: str, redirect_uri: Optional[str] = None) -> OAuthTokenResponse:
+    async def exchange_code_for_token(
+        self, code: str, state: str, redirect_uri: Optional[str] = None
+    ) -> OAuthTokenResponse:
         """
         Exchange OAuth code for access token.
 
@@ -190,7 +202,7 @@ class AuthService:
             response = await client.post(
                 "https://github.com/login/oauth/access_token",
                 data=data,
-                headers={"Accept": "application/json"}
+                headers={"Accept": "application/json"},
             )
             response.raise_for_status()
             return OAuthTokenResponse(**response.json())
@@ -213,8 +225,8 @@ class AuthService:
                 "https://api.github.com/user",
                 headers={
                     "Authorization": f"Bearer {access_token}",
-                    "Accept": "application/vnd.github.v3+json"
-                }
+                    "Accept": "application/vnd.github.v3+json",
+                },
             )
             response.raise_for_status()
             return GitHubUser(**response.json())
@@ -234,16 +246,14 @@ class AuthService:
                 "https://api.github.com/user/emails",
                 headers={
                     "Authorization": f"Bearer {access_token}",
-                    "Accept": "application/vnd.github.v3+json"
-                }
+                    "Accept": "application/vnd.github.v3+json",
+                },
             )
             response.raise_for_status()
             return response.json()
 
     def create_user_session(
-        self,
-        github_user: GitHubUser,
-        user_id: Optional[str] = None
+        self, github_user: GitHubUser, user_id: Optional[str] = None
     ) -> tuple[str, AuthUser]:
         """
         Create or update user session.
@@ -271,14 +281,12 @@ class AuthService:
             email=github_user.email,
             bio=github_user.bio,
             created_at=now,
-            last_login=now
+            last_login=now,
         )
 
         # Create JWT token
         access_token = JWTService.create_access_token(
-            user_id=user_id,
-            github_id=github_user.id,
-            github_login=github_user.login
+            user_id=user_id, github_id=github_user.id, github_login=github_user.login
         )
 
         return access_token, auth_user

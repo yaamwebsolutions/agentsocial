@@ -2,15 +2,22 @@
 Media Service - Integrates with KlingAI, Pexels, Pixabay, and Unsplash.
 Provides image and video generation/retrieval capabilities.
 """
+
 import httpx
 import logging
 from typing import Optional, Dict, List
 from config import (
-    KLINGAI_ACCESS_KEY, KLINGAI_SECRET_KEY, KLINGAI_API_URL, KLINGAI_ENABLED,
-    PEXELS_API_KEY, PEXELS_ENABLED,
-    PIXABAY_API_KEY, PIXABAY_ENABLED,
-    UNSPLASH_ACCESS_KEY, UNSPLASH_ENABLED,
-    AGENT_TIMEOUT
+    KLINGAI_ACCESS_KEY,
+    KLINGAI_SECRET_KEY,
+    KLINGAI_API_URL,
+    KLINGAI_ENABLED,
+    PEXELS_API_KEY,
+    PEXELS_ENABLED,
+    PIXABAY_API_KEY,
+    PIXABAY_ENABLED,
+    UNSPLASH_ACCESS_KEY,
+    UNSPLASH_ENABLED,
+    AGENT_TIMEOUT,
 )
 
 logger = logging.getLogger(__name__)
@@ -300,37 +307,45 @@ class MediaService:
             pexels_data = await self.pexels.search_photos(query, per_page)
             if pexels_data and "photos" in pexels_data:
                 for photo in pexels_data["photos"]:
-                    results.append({
-                        "url": photo["src"]["large"],
-                        "thumbnail": photo["src"]["small"],
-                        "photographer": photo["photographer"],
-                        "source": "pexels",
-                        "alt": photo.get("alt", query),
-                    })
+                    results.append(
+                        {
+                            "url": photo["src"]["large"],
+                            "thumbnail": photo["src"]["small"],
+                            "photographer": photo["photographer"],
+                            "source": "pexels",
+                            "alt": photo.get("alt", query),
+                        }
+                    )
 
         if not results and (source == "auto" or source == "unsplash"):
             unsplash_data = await self.unsplash.search_photos(query, per_page)
             if unsplash_data and "results" in unsplash_data:
                 for photo in unsplash_data["results"]:
-                    results.append({
-                        "url": photo["urls"]["regular"],
-                        "thumbnail": photo["urls"]["small"],
-                        "photographer": photo["user"]["name"],
-                        "source": "unsplash",
-                        "alt": photo.get("description") or photo.get("alt_description") or query,
-                    })
+                    results.append(
+                        {
+                            "url": photo["urls"]["regular"],
+                            "thumbnail": photo["urls"]["small"],
+                            "photographer": photo["user"]["name"],
+                            "source": "unsplash",
+                            "alt": photo.get("description")
+                            or photo.get("alt_description")
+                            or query,
+                        }
+                    )
 
         if not results and (source == "auto" or source == "pixabay"):
             pixabay_data = await self.pixabay.search_images(query, per_page)
             if pixabay_data:
                 for photo in pixabay_data:
-                    results.append({
-                        "url": photo["webformatURL"],
-                        "thumbnail": photo["previewURL"],
-                        "photographer": photo["user"],
-                        "source": "pixabay",
-                        "alt": photo.get("tags", query),
-                    })
+                    results.append(
+                        {
+                            "url": photo["webformatURL"],
+                            "thumbnail": photo["previewURL"],
+                            "photographer": photo["user"],
+                            "source": "pixabay",
+                            "alt": photo.get("tags", query),
+                        }
+                    )
 
         return results[:per_page]
 
@@ -347,23 +362,27 @@ class MediaService:
             pexels_data = await self.pexels.search_videos(query, per_page)
             if pexels_data and "videos" in pexels_data:
                 for video in pexels_data["videos"]:
-                    results.append({
-                        "url": video["video_files"][0]["link"],
-                        "thumbnail": video["image"],
-                        "duration": video["duration"],
-                        "source": "pexels",
-                    })
+                    results.append(
+                        {
+                            "url": video["video_files"][0]["link"],
+                            "thumbnail": video["image"],
+                            "duration": video["duration"],
+                            "source": "pexels",
+                        }
+                    )
 
         if not results and (source == "auto" or source == "pixabay"):
             pixabay_data = await self.pixabay.search_videos(query, per_page)
             if pixabay_data:
                 for video in pixabay_data:
-                    results.append({
-                        "url": video["videos"]["medium"]["url"],
-                        "thumbnail": video["picture_id"],
-                        "duration": video.get("duration", 0),
-                        "source": "pixabay",
-                    })
+                    results.append(
+                        {
+                            "url": video["videos"]["medium"]["url"],
+                            "thumbnail": video["picture_id"],
+                            "duration": video.get("duration", 0),
+                            "source": "pixabay",
+                        }
+                    )
 
         return results[:per_page]
 

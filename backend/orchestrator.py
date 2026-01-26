@@ -2,6 +2,7 @@
 Orchestrator - Handles agent execution with real LLM integration.
 Now supports DeepSeek API, web search, web scraping, and slash commands.
 """
+
 from typing import List, Optional, Dict
 import re
 from models import Post, AgentRun, CreatePostResponse
@@ -12,8 +13,12 @@ from services.media_service import media_service
 from services.scraping_service import scraping_service
 from services.email_service import email_service
 from config import (
-    DEEPSEEK_ENABLED, USE_REAL_LLM, KLINGAI_ENABLED,
-    SERPER_ENABLED, SCRAPERAPI_ENABLED, RESEND_ENABLED
+    DEEPSEEK_ENABLED,
+    USE_REAL_LLM,
+    KLINGAI_ENABLED,
+    SERPER_ENABLED,
+    SCRAPERAPI_ENABLED,
+    RESEND_ENABLED,
 )
 import asyncio
 import logging
@@ -23,11 +28,11 @@ logger = logging.getLogger(__name__)
 
 # Command patterns for parsing slash commands
 COMMAND_PATTERNS = {
-    'video': re.compile(r'/video\s+(.+?)(?:\s+(?:/|$)|$)', re.IGNORECASE),
-    'image': re.compile(r'/image\s+(.+?)(?:\s+(?:/|$)|$)', re.IGNORECASE),
-    'search': re.compile(r'/search\s+(.+?)(?:\s+(?:/|$)|$)', re.IGNORECASE),
-    'scrape': re.compile(r'/scrape\s+(\S+)(?:\s+|$)', re.IGNORECASE),
-    'email': re.compile(r'/email\s+(\S+)(?:\s+(.+))?', re.IGNORECASE),
+    "video": re.compile(r"/video\s+(.+?)(?:\s+(?:/|$)|$)", re.IGNORECASE),
+    "image": re.compile(r"/image\s+(.+?)(?:\s+(?:/|$)|$)", re.IGNORECASE),
+    "search": re.compile(r"/search\s+(.+?)(?:\s+(?:/|$)|$)", re.IGNORECASE),
+    "scrape": re.compile(r"/scrape\s+(\S+)(?:\s+|$)", re.IGNORECASE),
+    "email": re.compile(r"/email\s+(\S+)(?:\s+(.+))?", re.IGNORECASE),
 }
 
 
@@ -60,39 +65,45 @@ class Orchestrator:
         commands = []
 
         # Check for /video command
-        video_match = COMMAND_PATTERNS['video'].search(text)
+        video_match = COMMAND_PATTERNS["video"].search(text)
         if video_match:
             prompt = video_match.group(1).strip()
-            commands.append(Command('video', {'prompt': prompt}, video_match.group(0)))
+            commands.append(Command("video", {"prompt": prompt}, video_match.group(0)))
 
         # Check for /image command
-        image_match = COMMAND_PATTERNS['image'].search(text)
+        image_match = COMMAND_PATTERNS["image"].search(text)
         if image_match:
             prompt = image_match.group(1).strip()
-            commands.append(Command('image', {'prompt': prompt}, image_match.group(0)))
+            commands.append(Command("image", {"prompt": prompt}, image_match.group(0)))
 
         # Check for /search command
-        search_match = COMMAND_PATTERNS['search'].search(text)
+        search_match = COMMAND_PATTERNS["search"].search(text)
         if search_match:
             query = search_match.group(1).strip()
-            commands.append(Command('search', {'query': query}, search_match.group(0)))
+            commands.append(Command("search", {"query": query}, search_match.group(0)))
 
         # Check for /scrape command
-        scrape_match = COMMAND_PATTERNS['scrape'].search(text)
+        scrape_match = COMMAND_PATTERNS["scrape"].search(text)
         if scrape_match:
             url = scrape_match.group(1).strip()
-            commands.append(Command('scrape', {'url': url}, scrape_match.group(0)))
+            commands.append(Command("scrape", {"url": url}, scrape_match.group(0)))
 
         # Check for /email command
-        email_match = COMMAND_PATTERNS['email'].search(text)
+        email_match = COMMAND_PATTERNS["email"].search(text)
         if email_match:
             email = email_match.group(1).strip()
             content = email_match.group(2).strip() if email_match.group(2) else ""
-            commands.append(Command('email', {'to': email, 'content': content}, email_match.group(0)))
+            commands.append(
+                Command(
+                    "email", {"to": email, "content": content}, email_match.group(0)
+                )
+            )
 
         return commands
 
-    async def process_post(self, text: str, parent_id: Optional[str] = None) -> CreatePostResponse:
+    async def process_post(
+        self, text: str, parent_id: Optional[str] = None
+    ) -> CreatePostResponse:
         """Process a new post and trigger any mentioned agents or execute commands"""
 
         # Extract commands before creating the post
@@ -113,7 +124,7 @@ class Orchestrator:
                 agent_run = self.store.create_agent_run(
                     agent_handle=agent.handle,
                     trigger_post_id=post.id,
-                    thread_id=post.thread_id
+                    thread_id=post.thread_id,
                 )
                 triggered_runs.append(agent_run)
 
@@ -131,7 +142,9 @@ class Orchestrator:
         try:
             # Update status to running
             self.store.update_agent_run_status(agent_run.id, "running")
-            logger.info(f"Executing agent {agent_run.agent_handle} for post {trigger_post.id}")
+            logger.info(
+                f"Executing agent {agent_run.agent_handle} for post {trigger_post.id}"
+            )
 
             # Get agent configuration
             agent = get_agent(agent_run.agent_handle)
@@ -144,10 +157,14 @@ class Orchestrator:
             # Generate response using real LLM or fallback to mock
             if USE_REAL_LLM and DEEPSEEK_ENABLED:
                 logger.info(f"Using DeepSeek API for {agent.name}")
-                response_text = await self._generate_with_llm(agent, trigger_post.text, context)
+                response_text = await self._generate_with_llm(
+                    agent, trigger_post.text, context
+                )
             else:
                 logger.info(f"Using MockLLM for {agent.name}")
-                response_text = await self._generate_mock(agent, trigger_post.text, context)
+                response_text = await self._generate_mock(
+                    agent, trigger_post.text, context
+                )
 
             if not response_text:
                 raise ValueError("No response generated")
@@ -157,14 +174,12 @@ class Orchestrator:
                 agent_handle=agent.handle,
                 text=response_text,
                 parent_id=trigger_post.id,
-                thread_id=agent_run.thread_id
+                thread_id=agent_run.thread_id,
             )
 
             # Update agent run as completed
             self.store.update_agent_run_status(
-                agent_run.id,
-                "done",
-                output_post_id=reply_post.id
+                agent_run.id, "done", output_post_id=reply_post.id
             )
 
             logger.info(f"Agent {agent.name} completed successfully")
@@ -174,20 +189,19 @@ class Orchestrator:
             # Mark as error
             self.store.update_agent_run_status(agent_run.id, "error")
             # Create error reply
-            agent = get_agent(agent_run.agent_handle) if agent_run.agent_handle else None
+            agent = (
+                get_agent(agent_run.agent_handle) if agent_run.agent_handle else None
+            )
             error_text = f"❌ Error processing request: {str(e)}"
             self.store.create_agent_reply(
                 agent_handle=agent.handle if agent else "@unknown",
                 text=error_text,
                 parent_id=trigger_post.id,
-                thread_id=agent_run.thread_id
+                thread_id=agent_run.thread_id,
             )
 
     async def _generate_with_llm(
-        self,
-        agent,
-        user_message: str,
-        thread_history: List[dict]
+        self, agent, user_message: str, thread_history: List[dict]
     ) -> Optional[str]:
         """Generate response using DeepSeek API"""
         response = await generate_agent_response(
@@ -207,14 +221,12 @@ class Orchestrator:
         return await self._generate_mock(agent, user_message, thread_history)
 
     async def _generate_mock(
-        self,
-        agent,
-        user_message: str,
-        thread_history: List[dict]
+        self, agent, user_message: str, thread_history: List[dict]
     ) -> str:
         """Generate mock response (fallback)"""
         # Import MockLLM locally for fallback
         from services.llm_service import MockLLM
+
         return MockLLM.generate_response(agent, user_message, thread_history)
 
     async def _execute_command(self, command: Command, trigger_post: Post):
@@ -222,15 +234,15 @@ class Orchestrator:
         try:
             logger.info(f"Executing command: {command.type} with args: {command.args}")
 
-            if command.type == 'video':
+            if command.type == "video":
                 await self._execute_video_command(command, trigger_post)
-            elif command.type == 'image':
+            elif command.type == "image":
                 await self._execute_image_command(command, trigger_post)
-            elif command.type == 'search':
+            elif command.type == "search":
                 await self._execute_search_command(command, trigger_post)
-            elif command.type == 'scrape':
+            elif command.type == "scrape":
                 await self._execute_scrape_command(command, trigger_post)
-            elif command.type == 'email':
+            elif command.type == "email":
                 await self._execute_email_command(command, trigger_post)
             else:
                 logger.warning(f"Unknown command type: {command.type}")
@@ -243,12 +255,12 @@ class Orchestrator:
                 agent_handle="@system",
                 text=error_text,
                 parent_id=trigger_post.id,
-                thread_id=trigger_post.thread_id
+                thread_id=trigger_post.thread_id,
             )
 
     async def _execute_video_command(self, command: Command, trigger_post: Post):
         """Execute /video command - generate video using KlingAI"""
-        prompt = command.args['prompt']
+        prompt = command.args["prompt"]
 
         if not KLINGAI_ENABLED:
             reply_text = (
@@ -259,8 +271,8 @@ class Orchestrator:
             )
         else:
             result = await media_service.klingai.text_to_video(prompt)
-            if result and 'data' in result:
-                video_url = result['data'].get('url', '')
+            if result and "data" in result:
+                video_url = result["data"].get("url", "")
                 reply_text = (
                     f"🎬 **Video Generated**\n\n"
                     f"**Prompt:** {prompt}\n\n"
@@ -279,12 +291,12 @@ class Orchestrator:
             agent_handle="@video",
             text=reply_text,
             parent_id=trigger_post.id,
-            thread_id=trigger_post.thread_id
+            thread_id=trigger_post.thread_id,
         )
 
     async def _execute_image_command(self, command: Command, trigger_post: Post):
         """Execute /image command - generate image using KlingAI"""
-        prompt = command.args['prompt']
+        prompt = command.args["prompt"]
 
         if not KLINGAI_ENABLED:
             reply_text = (
@@ -295,11 +307,11 @@ class Orchestrator:
             )
         else:
             result = await media_service.klingai.generate_image(prompt)
-            if result and 'data' in result:
+            if result and "data" in result:
                 # Handle image result
-                images = result['data']
+                images = result["data"]
                 if images and len(images) > 0:
-                    image_url = images[0].get('url', '')
+                    image_url = images[0].get("url", "")
                     reply_text = (
                         f"🎨 **Image Generated**\n\n"
                         f"**Prompt:** {prompt}\n\n"
@@ -324,12 +336,12 @@ class Orchestrator:
             agent_handle="@image",
             text=reply_text,
             parent_id=trigger_post.id,
-            thread_id=trigger_post.thread_id
+            thread_id=trigger_post.thread_id,
         )
 
     async def _execute_search_command(self, command: Command, trigger_post: Post):
         """Execute /search command - search the web"""
-        query = command.args['query']
+        query = command.args["query"]
 
         if not SERPER_ENABLED:
             reply_text = (
@@ -340,17 +352,16 @@ class Orchestrator:
             )
         else:
             results = await search_web(query, num_results=5)
-            if results and 'organic' in results:
+            if results and "organic" in results:
                 formatted_results = []
-                for result in results['organic'][:5]:
-                    title = result.get('title', 'No title')
-                    link = result.get('link', '')
-                    snippet = result.get('snippet', 'No description')
+                for result in results["organic"][:5]:
+                    title = result.get("title", "No title")
+                    link = result.get("link", "")
+                    snippet = result.get("snippet", "No description")
                     formatted_results.append(f"**[{title}]({link})**\n{snippet}")
 
-                reply_text = (
-                    f"🔍 **Search Results for:** {query}\n\n" +
-                    "\n\n".join(formatted_results)
+                reply_text = f"🔍 **Search Results for:** {query}\n\n" + "\n\n".join(
+                    formatted_results
                 )
             else:
                 reply_text = (
@@ -363,12 +374,12 @@ class Orchestrator:
             agent_handle="@search",
             text=reply_text,
             parent_id=trigger_post.id,
-            thread_id=trigger_post.thread_id
+            thread_id=trigger_post.thread_id,
         )
 
     async def _execute_scrape_command(self, command: Command, trigger_post: Post):
         """Execute /scrape command - scrape a webpage"""
-        url = command.args['url']
+        url = command.args["url"]
 
         if not SCRAPERAPI_ENABLED:
             reply_text = (
@@ -380,11 +391,15 @@ class Orchestrator:
         else:
             content = await scraping_service.scrape_text(url, extract_links=True)
             if content:
-                title = content.get('title', 'No title')
-                text = content.get('text', '')[:1500]
-                links = content.get('links', [])[:5]
+                title = content.get("title", "No title")
+                text = content.get("text", "")[:1500]
+                links = content.get("links", [])[:5]
 
-                links_text = "\n".join([f"- {link}" for link in links]) if links else "No links found"
+                links_text = (
+                    "\n".join([f"- {link}" for link in links])
+                    if links
+                    else "No links found"
+                )
 
                 reply_text = (
                     f"📄 **Scraped:** {url}\n\n"
@@ -404,23 +419,23 @@ class Orchestrator:
             agent_handle="@scrape",
             text=reply_text,
             parent_id=trigger_post.id,
-            thread_id=trigger_post.thread_id
+            thread_id=trigger_post.thread_id,
         )
 
     async def _execute_email_command(self, command: Command, trigger_post: Post):
         """Execute /email command - send content as email"""
-        to_email = command.args['to']
-        content = command.args.get('content', '')
+        to_email = command.args["to"]
+        content = command.args.get("content", "")
 
         # If no content provided, use the original post text (without the command)
         if not content:
             # Remove the email command from the post text
             import re
-            content = re.sub(
-                r'/email\s+\S+\s*',
-                '',
-                trigger_post.text
-            ).strip() or "No additional content"
+
+            content = (
+                re.sub(r"/email\s+\S+\s*", "", trigger_post.text).strip()
+                or "No additional content"
+            )
 
         if not RESEND_ENABLED:
             reply_text = (
@@ -448,7 +463,7 @@ class Orchestrator:
                         <h2>📧 Message from AgentSocial</h2>
                     </div>
                     <div class="content">
-                        <p>{content.replace(chr(10), '<br>')}</p>
+                        <p>{content.replace(chr(10), "<br>")}</p>
                     </div>
                 </div>
             </body>
@@ -456,9 +471,7 @@ class Orchestrator:
             """
 
             message_id = await email_service.send_email(
-                to=to_email,
-                subject="Message from AgentSocial",
-                html=html
+                to=to_email, subject="Message from AgentSocial", html=html
             )
 
             if message_id:
@@ -480,7 +493,7 @@ class Orchestrator:
             agent_handle="@email",
             text=reply_text,
             parent_id=trigger_post.id,
-            thread_id=trigger_post.thread_id
+            thread_id=trigger_post.thread_id,
         )
 
     async def search_and_respond(
@@ -523,10 +536,10 @@ class Orchestrator:
 
         return f"""**Scraped from:** {url}
 
-**Title:** {content.get('title', 'No title')}
+**Title:** {content.get("title", "No title")}
 
 **Content:**
-{content.get('text', '')[:2000]}...
+{content.get("text", "")[:2000]}...
 """
 
 

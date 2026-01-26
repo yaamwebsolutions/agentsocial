@@ -22,7 +22,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "mock_responses": [
             "Alright, here's the deal: {context}... Keep it simple and focus on fundamentals.",
             "Hot take: {context}... is less about theory and more about execution.",
-            "Short version: {context}... cut the fluff, ship the thing."
+            "Short version: {context}... cut the fluff, ship the thing.",
         ],
     },
     {
@@ -37,7 +37,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "🔍",
         "mock_responses": [
             "Claim check needed on: {context}. Identify sources, dates, and primary evidence.",
-            "Verification checklist for: {context}. Confirm statistics, timeline, and attribution."
+            "Verification checklist for: {context}. Confirm statistics, timeline, and attribution.",
         ],
     },
     {
@@ -52,7 +52,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "📋",
         "mock_responses": [
             "TL;DR: {context}... Key points and actions available on request.",
-            "Summary: {context}... Focus on the key takeaways and next steps."
+            "Summary: {context}... Focus on the key takeaways and next steps.",
         ],
     },
     {
@@ -67,7 +67,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "✍️",
         "mock_responses": [
             "Punchy take: {context}... now sharper, clearer, and ready to post.",
-            "Polished version: {context}... structured and professional."
+            "Polished version: {context}... structured and professional.",
         ],
     },
     {
@@ -82,7 +82,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "⚡",
         "mock_responses": [
             "Implementation sketch for {context}... define interfaces, build small, test fast.",
-            "Architecture note: {context}... keep it modular, documented, and observable."
+            "Architecture note: {context}... keep it modular, documented, and observable.",
         ],
     },
     {
@@ -97,7 +97,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "📊",
         "mock_responses": [
             "Decision framing for {context}... define criteria, score options, pick tradeoffs.",
-            "Risk snapshot: {context}... list upside, downside, mitigations."
+            "Risk snapshot: {context}... list upside, downside, mitigations.",
         ],
     },
     {
@@ -112,7 +112,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "🔬",
         "mock_responses": [
             "Research brief on {context}... summary + key sources coming next.",
-            "Background context for {context}... outlining consensus and open questions."
+            "Background context for {context}... outlining consensus and open questions.",
         ],
     },
     {
@@ -127,7 +127,7 @@ DEFAULT_AGENTS_CONFIG: List[Dict] = [
         "icon": "🎯",
         "mock_responses": [
             "Coaching plan for {context}... clarify the goal, pick a small first step.",
-            "Momentum tip for {context}... focus on consistency over intensity."
+            "Momentum tip for {context}... focus on consistency over intensity.",
         ],
     },
 ]
@@ -149,7 +149,9 @@ def _load_agents_config(path: Path) -> List[Dict]:
     except Exception as exc:
         if AGENTS_CONFIG_STRICT:
             raise
-        logger.error("Failed to load agents config (%s). Using defaults. Error: %s", path, exc)
+        logger.error(
+            "Failed to load agents config (%s). Using defaults. Error: %s", path, exc
+        )
         return DEFAULT_AGENTS_CONFIG
 
 

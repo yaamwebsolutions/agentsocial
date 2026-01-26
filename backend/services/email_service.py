@@ -2,6 +2,7 @@
 Email Service - Integrates with Resend for email notifications.
 Allows agents to send email notifications and reports.
 """
+
 import httpx
 import logging
 from typing import Optional, List, Dict
@@ -72,7 +73,9 @@ class EmailService:
                 return data.get("id")
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"Resend API error: {e.response.status_code} - {e.response.text}")
+            logger.error(
+                f"Resend API error: {e.response.status_code} - {e.response.text}"
+            )
             return None
         except Exception as e:
             logger.error(f"Resend API unexpected error: {e}")
@@ -131,10 +134,10 @@ class EmailService:
 
                     <h3>Response:</h3>
                     <div class="agent-response">
-                        {agent_response.replace(chr(10), '<br>')}
+                        {agent_response.replace(chr(10), "<br>")}
                     </div>
 
-                    {f'<a href="{thread_url}" class="button">View Thread</a>' if thread_url else ''}
+                    {f'<a href="{thread_url}" class="button">View Thread</a>' if thread_url else ""}
                 </div>
                 <p style="text-align: center; color: #999; font-size: 12px; margin-top: 20px;">
                     Sent by AgentTwitter - Your AI Agent Platform
@@ -172,8 +175,8 @@ class EmailService:
         for interaction in agent_interactions[:10]:
             interactions_html += f"""
             <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
-                <strong>{interaction.get('agent_handle', 'Agent')}</strong>
-                <p style="margin: 5px 0; color: #666;">{interaction.get('original_message', '')[:100]}...</p>
+                <strong>{interaction.get("agent_handle", "Agent")}</strong>
+                <p style="margin: 5px 0; color: #666;">{interaction.get("original_message", "")[:100]}...</p>
             </div>
             """
 

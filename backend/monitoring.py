@@ -25,9 +25,11 @@ from functools import wraps
 # Metrics Storage
 # =============================================================================
 
+
 @dataclass
 class MetricPoint:
     """A single metric data point"""
+
     timestamp: float
     value: float
     tags: Dict[str, str] = field(default_factory=dict)
@@ -36,6 +38,7 @@ class MetricPoint:
 @dataclass
 class MetricSummary:
     """Summary statistics for a metric"""
+
     count: int
     min: float
     max: float
@@ -54,20 +57,20 @@ class MetricsRegistry:
         self._counters: Dict[str, float] = defaultdict(float)
         self._gauges: Dict[str, float] = defaultdict(float)
 
-    def record_metric(self, name: str, value: float, tags: Optional[Dict[str, str]] = None):
+    def record_metric(
+        self, name: str, value: float, tags: Optional[Dict[str, str]] = None
+    ):
         """Record a metric value"""
-        metric = MetricPoint(
-            timestamp=time.time(),
-            value=value,
-            tags=tags or {}
-        )
+        metric = MetricPoint(timestamp=time.time(), value=value, tags=tags or {})
         self._metrics[name].append(metric)
 
         # Prune old metrics if over limit
         if len(self._metrics[name]) > self.max_points:
-            self._metrics[name] = self._metrics[name][-self.max_points:]
+            self._metrics[name] = self._metrics[name][-self.max_points :]
 
-    def increment_counter(self, name: str, value: float = 1.0, tags: Optional[Dict[str, str]] = None):
+    def increment_counter(
+        self, name: str, value: float = 1.0, tags: Optional[Dict[str, str]] = None
+    ):
         """Increment a counter"""
         key = self._make_key(name, tags)
         self._counters[key] += value
@@ -83,7 +86,9 @@ class MetricsRegistry:
             return [m for m in self._metrics[name] if m.timestamp >= since]
         return self._metrics[name].copy()
 
-    def get_metric_summary(self, name: str, since: Optional[float] = None) -> Optional[MetricSummary]:
+    def get_metric_summary(
+        self, name: str, since: Optional[float] = None
+    ) -> Optional[MetricSummary]:
         """Get summary statistics for a metric"""
         points = self.get_metric(name, since)
         if not points:
@@ -93,6 +98,7 @@ class MetricsRegistry:
         values.sort()
 
         import statistics
+
         return MetricSummary(
             count=len(values),
             min=min(values),
@@ -127,38 +133,46 @@ class MetricsRegistry:
 # Request Tracking
 # =============================================================================
 
+
 class RequestTracker:
     """Track HTTP requests for monitoring"""
 
     def __init__(self, registry: MetricsRegistry):
         self.registry = registry
 
-    def track_request(self, endpoint: str, method: str, status_code: int, duration: float):
+    def track_request(
+        self, endpoint: str, method: str, status_code: int, duration: float
+    ):
         """Track a request"""
         # Record request count
         self.registry.increment_counter(
             "http_requests_total",
-            tags={"endpoint": endpoint, "method": method, "status": str(status_code)}
+            tags={"endpoint": endpoint, "method": method, "status": str(status_code)},
         )
 
         # Record duration
         self.registry.record_metric(
             "http_request_duration_ms",
             duration * 1000,
-            tags={"endpoint": endpoint, "method": method}
+            tags={"endpoint": endpoint, "method": method},
         )
 
         # Track errors
         if status_code >= 400:
             self.registry.increment_counter(
                 "http_errors_total",
-                tags={"endpoint": endpoint, "method": method, "status": str(status_code)}
+                tags={
+                    "endpoint": endpoint,
+                    "method": method,
+                    "status": str(status_code),
+                },
             )
 
 
 # =============================================================================
 # Health Checks
 # =============================================================================
+
 
 class HealthCheck:
     """Base class for health checks"""
@@ -189,7 +203,7 @@ class ServiceHealthCheck(HealthCheck):
                 "name": self.name,
                 "status": "healthy" if result else "unhealthy",
                 "latency_ms": round(duration * 1000, 2),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
         except Exception as e:
             duration = time.time() - start
@@ -198,7 +212,7 @@ class ServiceHealthCheck(HealthCheck):
                 "status": "unhealthy",
                 "error": str(e),
                 "latency_ms": round(duration * 1000, 2),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
 
@@ -213,7 +227,7 @@ class SystemHealthCheck(HealthCheck):
         """Check system resource usage"""
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
 
         cpu_healthy = cpu_percent < self.threshold_percent
         memory_healthy = memory.percent < self.threshold_percent
@@ -221,30 +235,30 @@ class SystemHealthCheck(HealthCheck):
 
         return {
             "name": self.name,
-            "status": "healthy" if all([cpu_healthy, memory_healthy, disk_healthy]) else "degraded",
-            "cpu": {
-                "percent": cpu_percent,
-                "healthy": cpu_healthy
-            },
+            "status": "healthy"
+            if all([cpu_healthy, memory_healthy, disk_healthy])
+            else "degraded",
+            "cpu": {"percent": cpu_percent, "healthy": cpu_healthy},
             "memory": {
                 "percent": memory.percent,
                 "available_gb": round(memory.available / (1024**3), 2),
                 "total_gb": round(memory.total / (1024**3), 2),
-                "healthy": memory_healthy
+                "healthy": memory_healthy,
             },
             "disk": {
                 "percent": disk.percent,
                 "free_gb": round(disk.free / (1024**3), 2),
                 "total_gb": round(disk.total / (1024**3), 2),
-                "healthy": disk_healthy
+                "healthy": disk_healthy,
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
 # =============================================================================
 # Health Monitor
 # =============================================================================
+
 
 class HealthMonitor:
     """Monitors health of all services and system resources"""
@@ -274,12 +288,14 @@ class HealthMonitor:
                 overall_status = "degraded"
 
         # Record health status
-        self.registry.set_gauge("health_status", 1 if overall_status == "healthy" else 0)
+        self.registry.set_gauge(
+            "health_status", 1 if overall_status == "healthy" else 0
+        )
 
         return {
             "status": overall_status,
             "checks": results,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     def get_status(self) -> Dict[str, any]:
@@ -287,7 +303,7 @@ class HealthMonitor:
         return {
             "status": self._compute_overall_status(),
             "checks": self.last_results,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
     def _compute_overall_status(self) -> str:
@@ -309,8 +325,10 @@ class HealthMonitor:
 # Monitoring Decorator
 # =============================================================================
 
-def track_endpoint(monitor: 'MonitoringService'):
+
+def track_endpoint(monitor: "MonitoringService"):
     """Decorator to track endpoint calls"""
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -332,12 +350,14 @@ def track_endpoint(monitor: 'MonitoringService'):
                 monitor.tracker.track_request(endpoint, "POST", status_code, duration)
 
         return wrapper
+
     return decorator
 
 
 # =============================================================================
 # Monitoring Service
 # =============================================================================
+
 
 class MonitoringService:
     """Main monitoring service"""
@@ -359,12 +379,16 @@ class MonitoringService:
         # Get counter values
         metrics["counters"] = {}
         for key in self.registry._counters:
-            metrics["counters"][key] = self.registry.get_counter(key.split("@")[0], self._parse_tags(key))
+            metrics["counters"][key] = self.registry.get_counter(
+                key.split("@")[0], self._parse_tags(key)
+            )
 
         # Get gauge values
         metrics["gauges"] = {}
         for key in self.registry._gauges:
-            metrics["gauges"][key] = self.registry.get_gauge(key.split("@")[0], self._parse_tags(key))
+            metrics["gauges"][key] = self.registry.get_gauge(
+                key.split("@")[0], self._parse_tags(key)
+            )
 
         # Get metric summaries
         metrics["summaries"] = {}

@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, patch
 # LLM Service Tests
 # =============================================================================
 
+
 class TestLLMService:
     """Tests for the LLM service"""
 
@@ -30,7 +31,7 @@ class TestLLMService:
                 agent_style="Test style",
                 agent_policy="Test policy",
                 user_message="Hello",
-                thread_history=[]
+                thread_history=[],
             )
             # Should return a mock response when disabled
             assert response is not None
@@ -58,6 +59,7 @@ class TestLLMService:
 # Search Service Tests
 # =============================================================================
 
+
 class TestSearchService:
     """Tests for the web search service"""
 
@@ -76,6 +78,7 @@ class TestSearchService:
 # Media Service Tests
 # =============================================================================
 
+
 class TestMediaService:
     """Tests for the media service"""
 
@@ -83,6 +86,7 @@ class TestMediaService:
     async def test_search_images(self):
         """Test image search"""
         from services.media_service import media_service
+
         results = await media_service.search_images("test query", 5)
         # Should return a list (even if empty)
         assert isinstance(results, list)
@@ -91,6 +95,7 @@ class TestMediaService:
     async def test_search_videos(self):
         """Test video search"""
         from services.media_service import media_service
+
         results = await media_service.search_videos("test query", 5)
         # Should return a list (even if empty)
         assert isinstance(results, list)
@@ -99,6 +104,7 @@ class TestMediaService:
 # =============================================================================
 # Email Service Tests
 # =============================================================================
+
 
 class TestEmailService:
     """Tests for the email service"""
@@ -111,9 +117,7 @@ class TestEmailService:
 
         if not RESEND_ENABLED:
             result = await email_service.send_email(
-                to="test@example.com",
-                subject="Test",
-                html="<p>Test</p>"
+                to="test@example.com", subject="Test", html="<p>Test</p>"
             )
             # Should return None when disabled
             assert result is None
@@ -122,6 +126,7 @@ class TestEmailService:
 # =============================================================================
 # Scraping Service Tests
 # =============================================================================
+
 
 class TestScrapingService:
     """Tests for the web scraping service"""

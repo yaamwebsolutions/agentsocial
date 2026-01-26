@@ -2,11 +2,18 @@
 LLM Service - Integrates with DeepSeek API for real AI responses.
 Falls back to MockLLM if API key is not configured.
 """
+
 import httpx
 import asyncio
 import logging
 from typing import List, Dict, Optional
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, DEEPSEEK_ENABLED, AGENT_TIMEOUT
+from config import (
+    DEEPSEEK_API_KEY,
+    DEEPSEEK_BASE_URL,
+    DEEPSEEK_MODEL,
+    DEEPSEEK_ENABLED,
+    AGENT_TIMEOUT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +61,9 @@ class LLMService:
             logger.error("DeepSeek API request timed out")
             return None
         except httpx.HTTPStatusError as e:
-            logger.error(f"DeepSeek API error: {e.response.status_code} - {e.response.text}")
+            logger.error(
+                f"DeepSeek API error: {e.response.status_code} - {e.response.text}"
+            )
             return None
         except Exception as e:
             logger.error(f"DeepSeek API unexpected error: {e}")
@@ -135,16 +144,15 @@ class MockLLM:
 
     @staticmethod
     def generate_response(
-        agent,
-        context: str,
-        thread_history: List[Dict] = None
+        agent, context: str, thread_history: List[Dict] = None
     ) -> str:
         """Generate a mock response based on agent type"""
-        agent_id = agent.id if hasattr(agent, 'id') else agent
+        agent_id = agent.id if hasattr(agent, "id") else agent
         context_short = context[:200]
 
         if hasattr(agent, "mock_responses") and agent.mock_responses:
             import random
+
             responses = [
                 resp.replace("{context}", context_short)
                 for resp in agent.mock_responses
@@ -164,12 +172,13 @@ class MockLLM:
 
         return responses.get(
             agent_id,
-            f"Hi! I'm {agent_id if isinstance(agent_id, str) else 'AI'}. I received: {context[:100]}..."
+            f"Hi! I'm {agent_id if isinstance(agent_id, str) else 'AI'}. I received: {context[:100]}...",
         )
 
     @staticmethod
     def _grok_response(context: str) -> str:
         import random
+
         responses = [
             f"Alright, here's the deal: {context[:50]}... is basically about understanding the fundamentals. Keep it simple.",
             f"Look, {context[:40]}... isn't rocket science. Break it down: 1) Identify the issue, 2) Apply common sense, 3) Execute.",

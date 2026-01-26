@@ -3,6 +3,7 @@ Authentication Middleware
 FastAPI dependencies for protected routes.
 Supports both Auth0 tokens and internal JWT tokens.
 """
+
 from typing import Optional, Union, Dict, Any
 from datetime import datetime
 from fastapi import Header, HTTPException, Depends
@@ -18,7 +19,7 @@ UserPayload = Union[JWTPayload, Dict[str, Any]]
 
 
 async def get_token_payload(
-    authorization: Optional[str] = Header(None)
+    authorization: Optional[str] = Header(None),
 ) -> Optional[UserPayload]:
     """
     Extract and validate token from Authorization header.
@@ -59,7 +60,7 @@ async def get_token_payload(
 
 
 async def get_current_user(
-    payload: Optional[UserPayload] = Depends(get_token_payload)
+    payload: Optional[UserPayload] = Depends(get_token_payload),
 ) -> UserPayload:
     """
     Get authenticated user. Raises 401 if not authenticated.
@@ -81,7 +82,7 @@ async def get_current_user(
         )
 
     # Check expiration for internal JWT
-    if isinstance(payload, JWTPayload) and hasattr(payload, 'exp'):
+    if isinstance(payload, JWTPayload) and hasattr(payload, "exp"):
         if payload.exp < datetime.now():
             raise HTTPException(
                 status_code=401,
@@ -103,7 +104,7 @@ async def get_current_user(
 
 
 async def get_optional_user(
-    payload: Optional[UserPayload] = Depends(get_token_payload)
+    payload: Optional[UserPayload] = Depends(get_token_payload),
 ) -> Optional[UserPayload]:
     """
     Get authenticated user if present, but don't raise error if not.

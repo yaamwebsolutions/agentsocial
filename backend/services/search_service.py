@@ -2,6 +2,7 @@
 Search Service - Integrates with Serper.dev for Google Search results.
 Allows agents to fetch real-time web search results.
 """
+
 import httpx
 import logging
 from typing import List, Dict, Optional
@@ -20,10 +21,7 @@ class SearchService:
         self.timeout = AGENT_TIMEOUT
 
     async def search(
-        self,
-        query: str,
-        num_results: int = 10,
-        search_type: str = "search"
+        self, query: str, num_results: int = 10, search_type: str = "search"
     ) -> Optional[Dict]:
         """
         Perform a web search using Serper.dev API.
@@ -69,7 +67,9 @@ class SearchService:
             logger.error(f"Serper API request timed out for query: {query}")
             return None
         except httpx.HTTPStatusError as e:
-            logger.error(f"Serper API error: {e.response.status_code} - {e.response.text}")
+            logger.error(
+                f"Serper API error: {e.response.status_code} - {e.response.text}"
+            )
             return None
         except Exception as e:
             logger.error(f"Serper API unexpected error: {e}")

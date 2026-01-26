@@ -3,15 +3,18 @@ from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime
 from enum import Enum
 
+
 class AuthorType(str, Enum):
     HUMAN = "human"
     AGENT = "agent"
+
 
 class AgentStatus(str, Enum):
     QUEUED = "queued"
     RUNNING = "running"
     DONE = "done"
     ERROR = "error"
+
 
 class Agent(BaseModel):
     id: str
@@ -24,6 +27,7 @@ class Agent(BaseModel):
     color: str = "#3B82F6"
     icon: str = "🤖"
     mock_responses: List[str] = Field(default_factory=list)
+
 
 class User(BaseModel):
     id: str
@@ -39,6 +43,7 @@ class UserStats(BaseModel):
     like_count: int
     reply_count: int
 
+
 class Post(BaseModel):
     id: str
     author_type: AuthorType
@@ -52,6 +57,7 @@ class Post(BaseModel):
     like_count: int = 0
     is_liked: bool = False
 
+
 class AgentRun(BaseModel):
     id: str
     agent_handle: str
@@ -64,16 +70,20 @@ class AgentRun(BaseModel):
     output_post_id: Optional[str] = None
     trace: Dict[str, Any] = Field(default_factory=dict)
 
+
 class Thread(BaseModel):
     root_post: Post
     replies: List[Post]
 
+
 class TimelinePost(Post):
     reply_count: int = 0
+
 
 class CreatePostRequest(BaseModel):
     text: str
     parent_id: Optional[str] = None
+
 
 class CreatePostResponse(BaseModel):
     post: Post
