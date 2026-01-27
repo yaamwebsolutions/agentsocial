@@ -16,7 +16,7 @@ const API_BASE =
   import.meta.env.VITE_API_URL ||
   "http://localhost:8000";
 
-const AUTH_TOKEN_KEYS = ["auth0_access_token", "access_token"];
+const AUTH_TOKEN_KEYS = ["auth0_id_token", "auth0_access_token", "access_token"];
 
 function getStoredAccessToken(): string | null {
   for (const key of AUTH_TOKEN_KEYS) {
