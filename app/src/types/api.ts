@@ -75,3 +75,91 @@ export interface CreatePostResponse {
   post: Post;
   triggered_agent_runs: AgentRun[];
 }
+
+// =============================================================================
+// AUDIT TRAIL TYPES
+// =============================================================================
+
+export type AuditEventType =
+  | "post_create"
+  | "post_delete"
+  | "post_like"
+  | "post_unlike"
+  | "agent_run_start"
+  | "agent_run_complete"
+  | "agent_run_error"
+  | "media_video_generate"
+  | "media_image_generate"
+  | "media_search"
+  | "auth_login"
+  | "auth_logout"
+  | "auth_failed"
+  | "command_executed"
+  | "command_failed"
+  | "system_error"
+  | "system_startup";
+
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  event_type: AuditEventType;
+  user_id?: string;
+  session_id?: string;
+  ip_address?: string;
+  user_agent?: string;
+  resource_type?: string;
+  resource_id?: string;
+  details: Record<string, any>;
+  status: string;
+  error_message?: string;
+  thread_id?: string;
+  post_id?: string;
+  agent_run_id?: string;
+}
+
+export interface MediaAsset {
+  id: string;
+  created_at: string;
+  asset_type: "video" | "image";
+  url: string;
+  prompt: string;
+  generated_by: string;
+  service: string;
+  thread_id?: string;
+  post_id?: string;
+  duration_seconds?: number;
+  thumbnail_url?: string;
+  status: string;
+}
+
+export interface ConversationAudit {
+  id: string;
+  thread_id: string;
+  created_at: string;
+  updated_at: string;
+  participant_ids: string[];
+  agent_handles: string[];
+  message_count: number;
+  human_message_count: number;
+  agent_message_count: number;
+  media_assets: string[];
+  commands_executed: string[];
+  status: string;
+}
+
+export interface AuditTrailResponse {
+  logs: AuditLog[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface AuditStats {
+  total_logs: number;
+  total_media_assets: number;
+  total_conversations: number;
+  event_type_counts: Record<string, number>;
+  video_count: number;
+  image_count: number;
+}

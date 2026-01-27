@@ -100,6 +100,10 @@ tags_metadata = [
         "name": "Authentication",
         "description": "GitHub OAuth login and user session management",
     },
+    {
+        "name": "Audit",
+        "description": "Enterprise-grade audit trail and event logging",
+    },
 ]
 
 app = FastAPI(
@@ -1225,6 +1229,156 @@ async def auth0_logout(return_to: str = "https://yaam.click"):
     logout_url = auth0_service.get_logout_url(return_to=return_to)
 
     return {"logout_url": logout_url}
+
+
+# =============================================================================
+# AUDIT TRAIL ENDPOINTS
+# =============================================================================
+
+
+@app.get("/audit/logs", tags=["Audit"])
+async def get_audit_logs(
+    event_type: Optional[str] = None,
+    user_id: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    thread_id: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 100,
+    _user: Optional[dict] = Depends(get_optional_user),
+):
+    """
+    Get audit logs with filtering and pagination.
+
+    Returns enterprise-grade audit trail of all system events.
+    Useful for compliance, debugging, and tracking user activity.
+
+    Query Parameters:
+        event_type: Filter by event type (post_create, agent_run_start, etc.)
+        user_id: Filter by user who performed the action
+        resource_type: Filter by resource type (post, agent_run, media, etc.)
+        resource_id: Filter by specific resource ID
+        thread_id: Filter by thread/conversation
+        status: Filter by status (success, failed, pending)
+        page: Page number for pagination
+        page_size: Number of results per page
+
+    Returns paginated list of audit log entries.
+    """
+    from services.audit_service import audit_service
+    from models import AuditEventType
+
+    # Convert string to enum if provided
+    event_type_enum = None
+    if event_type:
+        try:
+            event_type_enum = AuditEventType(event_type)
+        except ValueError:
+            pass
+
+    result = audit_service.get_logs(
+        event_type=event_type_enum,
+        user_id=user_id,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        thread_id=thread_id,
+        status=status,
+        page=page,
+        page_size=page_size,
+    )
+
+    return result
+
+
+@app.get("/audit/stats", tags=["Audit"])
+async def get_audit_stats(_user: Optional[dict] = Depends(get_optional_user)):
+    """
+    Get audit trail statistics.
+
+    Returns summary statistics about the audit trail including
+    event counts, media generation counts, and conversation stats.
+    """
+    from services.audit_service import audit_service
+
+    return audit_service.get_stats()
+
+
+@app.get("/audit/media", tags=["Audit"])
+async def get_media_assets(
+    asset_type: Optional[str] = None,
+    thread_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    limit: int = 50,
+    _user: Optional[dict] = Depends(get_optional_user),
+):
+    """
+    Get generated media assets (videos, images).
+
+    Returns all generated media with their URLs, prompts, and metadata.
+    Useful for finding past generated content.
+
+    Query Parameters:
+        asset_type: Filter by asset type (video, image)
+        thread_id: Filter by related thread/conversation
+        user_id: Filter by user who generated the media
+        limit: Maximum number of results
+
+    Returns list of media assets with download URLs.
+    """
+    from services.audit_service import audit_service
+
+    assets = audit_service.get_media_assets(
+        asset_type=asset_type, thread_id=thread_id, user_id=user_id, limit=limit
+    )
+
+    return {"assets": assets, "count": len(assets)}
+
+
+@app.get("/audit/conversations", tags=["Audit"])
+async def get_conversation_audits(
+    _user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Get all conversation audits.
+
+    Returns audit information for all threads including participants,
+    message counts, media generated, and commands executed.
+    """
+    from services.audit_service import audit_service
+
+    conversations = audit_service.get_all_conversation_audits()
+
+    return {
+        "conversations": conversations,
+        "count": len(conversations),
+    }
+
+
+@app.get("/audit/conversations/{thread_id}", tags=["Audit"])
+async def get_conversation_audit(
+    thread_id: str, _user: Optional[dict] = Depends(get_optional_user)
+):
+    """
+    Get audit information for a specific conversation.
+
+    Returns detailed audit data for a thread including all participants,
+    media assets generated, commands executed, and activity timeline.
+    """
+    from services.audit_service import audit_service
+
+    audit = audit_service.get_conversation_audit(thread_id)
+
+    if not audit:
+        raise HTTPException(status_code=404, detail="Conversation audit not found")
+
+    # Get related logs for this thread
+    logs_result = audit_service.get_logs(thread_id=thread_id, page_size=100)
+
+    return {
+        "audit": audit,
+        "related_logs": logs_result["logs"],
+    }
 
 
 # =============================================================================

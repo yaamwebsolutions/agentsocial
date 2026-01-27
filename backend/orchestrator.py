@@ -12,6 +12,7 @@ from services import LLMService, search_web, scrape_content, generate_agent_resp
 from services.media_service import media_service
 from services.scraping_service import scraping_service
 from services.email_service import email_service
+from services.audit_service import audit_service
 from config import (
     DEEPSEEK_ENABLED,
     USE_REAL_LLM,
@@ -139,6 +140,19 @@ class Orchestrator:
 
     async def _execute_agent(self, agent_run: AgentRun, trigger_post: Post):
         """Execute an agent run asynchronously with real LLM"""
+        # Log agent run start
+        audit_service.log_agent_run(
+            agent_run_id=agent_run.id,
+            agent_handle=agent_run.agent_handle,
+            thread_id=agent_run.thread_id,
+            trigger_post_id=trigger_post.id,
+            status="running",
+        )
+        # Update conversation audit
+        audit_service.update_conversation_audit(
+            thread_id=agent_run.thread_id, agent_handle=agent_run.agent_handle
+        )
+
         try:
             # Update status to running
             self.store.update_agent_run_status(agent_run.id, "running")
@@ -182,12 +196,32 @@ class Orchestrator:
                 agent_run.id, "done", output_post_id=reply_post.id
             )
 
+            # Log agent run completion
+            audit_service.log_agent_run(
+                agent_run_id=agent_run.id,
+                agent_handle=agent_run.agent_handle,
+                thread_id=agent_run.thread_id,
+                trigger_post_id=trigger_post.id,
+                status="success",
+            )
+
             logger.info(f"Agent {agent.name} completed successfully")
 
         except Exception as e:
             logger.error(f"Error executing agent {agent_run.agent_handle}: {e}")
             # Mark as error
             self.store.update_agent_run_status(agent_run.id, "error")
+
+            # Log agent run error
+            audit_service.log_agent_run(
+                agent_run_id=agent_run.id,
+                agent_handle=agent_run.agent_handle,
+                thread_id=agent_run.thread_id,
+                trigger_post_id=trigger_post.id,
+                status="failed",
+                error_message=str(e),
+            )
+
             # Create error reply
             agent = (
                 get_agent(agent_run.agent_handle) if agent_run.agent_handle else None
@@ -234,6 +268,11 @@ class Orchestrator:
         try:
             logger.info(f"Executing command: {command.type} with args: {command.args}")
 
+            # Update conversation audit with command
+            audit_service.update_conversation_audit(
+                thread_id=trigger_post.thread_id, command=f"/{command.type}"
+            )
+
             if command.type == "video":
                 await self._execute_video_command(command, trigger_post)
             elif command.type == "image":
@@ -247,8 +286,26 @@ class Orchestrator:
             else:
                 logger.warning(f"Unknown command type: {command.type}")
 
+            # Log successful command execution
+            audit_service.log_command_execution(
+                command=command.type,
+                args=command.args,
+                thread_id=trigger_post.thread_id,
+                status="success",
+            )
+
         except Exception as e:
             logger.error(f"Error executing command {command.type}: {e}")
+
+            # Log failed command execution
+            audit_service.log_command_execution(
+                command=command.type,
+                args=command.args,
+                thread_id=trigger_post.thread_id,
+                status="failed",
+                error_message=str(e),
+            )
+
             # Create error reply
             error_text = f"❌ Error executing `/{command.type}` command: {str(e)}"
             self.store.create_agent_reply(
@@ -269,6 +326,15 @@ class Orchestrator:
                 f"Please configure KLINGAI credentials.\n\n"
                 f"Prompt: *{prompt}*"
             )
+            # Log failed media generation
+            audit_service.log_media_generation(
+                asset_type="video",
+                url="",
+                prompt=prompt,
+                thread_id=trigger_post.thread_id,
+                status="failed",
+                error_message="KlingAI service not enabled",
+            )
         else:
             result = await media_service.klingai.text_to_video(prompt)
             if result and "data" in result:
@@ -279,12 +345,36 @@ class Orchestrator:
                     f"[Watch Video]({video_url})\n\n"
                     f"✅ Video generation complete!"
                 )
+                # Log successful media generation
+                media_asset, _ = audit_service.log_media_generation(
+                    asset_type="video",
+                    url=video_url,
+                    prompt=prompt,
+                    service="klingai",
+                    thread_id=trigger_post.thread_id,
+                    post_id=trigger_post.id,
+                    status="success",
+                )
+                # Update conversation audit with media asset
+                audit_service.update_conversation_audit(
+                    thread_id=trigger_post.thread_id,
+                    media_asset_id=media_asset.id,
+                )
             else:
                 reply_text = (
                     f"🎬 **Video Generation**\n\n"
                     f"⚠️ Failed to generate video. "
                     f"Please try again or check the prompt.\n\n"
                     f"Prompt: *{prompt}*"
+                )
+                # Log failed media generation
+                audit_service.log_media_generation(
+                    asset_type="video",
+                    url="",
+                    prompt=prompt,
+                    thread_id=trigger_post.thread_id,
+                    status="failed",
+                    error_message="Failed to generate video",
                 )
 
         self.store.create_agent_reply(
@@ -305,6 +395,15 @@ class Orchestrator:
                 f"Please configure KLINGAI credentials.\n\n"
                 f"Prompt: *{prompt}*"
             )
+            # Log failed media generation
+            audit_service.log_media_generation(
+                asset_type="image",
+                url="",
+                prompt=prompt,
+                thread_id=trigger_post.thread_id,
+                status="failed",
+                error_message="KlingAI service not enabled",
+            )
         else:
             result = await media_service.klingai.generate_image(prompt)
             if result and "data" in result:
@@ -318,11 +417,35 @@ class Orchestrator:
                         f"![Generated Image]({image_url})\n\n"
                         f"✅ Image generation complete!"
                     )
+                    # Log successful media generation
+                    media_asset, _ = audit_service.log_media_generation(
+                        asset_type="image",
+                        url=image_url,
+                        prompt=prompt,
+                        service="klingai",
+                        thread_id=trigger_post.thread_id,
+                        post_id=trigger_post.id,
+                        status="success",
+                    )
+                    # Update conversation audit with media asset
+                    audit_service.update_conversation_audit(
+                        thread_id=trigger_post.thread_id,
+                        media_asset_id=media_asset.id,
+                    )
                 else:
                     reply_text = (
                         f"🎨 **Image Generation**\n\n"
                         f"⚠️ No image returned. Please try again.\n\n"
                         f"Prompt: *{prompt}*"
+                    )
+                    # Log failed media generation
+                    audit_service.log_media_generation(
+                        asset_type="image",
+                        url="",
+                        prompt=prompt,
+                        thread_id=trigger_post.thread_id,
+                        status="failed",
+                        error_message="No image returned",
                     )
             else:
                 reply_text = (
@@ -330,6 +453,15 @@ class Orchestrator:
                     f"⚠️ Failed to generate image. "
                     f"Please try again or check the prompt.\n\n"
                     f"Prompt: *{prompt}*"
+                )
+                # Log failed media generation
+                audit_service.log_media_generation(
+                    asset_type="image",
+                    url="",
+                    prompt=prompt,
+                    thread_id=trigger_post.thread_id,
+                    status="failed",
+                    error_message="Failed to generate image",
                 )
 
         self.store.create_agent_reply(

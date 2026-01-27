@@ -14,6 +14,12 @@ import uuid
 from datetime import datetime
 
 
+# Import audit service lazily to avoid circular imports
+def _get_audit_service():
+    from services.audit_service import audit_service
+    return audit_service
+
+
 class DataStore:
     """In-memory data store for posts, threads, and agent runs"""
 
@@ -49,6 +55,25 @@ class DataStore:
         )
 
         self.posts[post_id] = post
+
+        # Log to audit service
+        try:
+            audit = _get_audit_service()
+            audit.log_post_create(
+                post_id=post_id,
+                user_id=self.current_user.id,
+                text=text,
+                thread_id=thread_id,
+                parent_id=parent_id,
+            )
+            # Update conversation audit
+            audit.update_conversation_audit(
+                thread_id=thread_id, participant_id=self.current_user.id
+            )
+        except Exception:
+            # Don't fail post creation if audit logging fails
+            pass
+
         return post
 
     def create_agent_reply(
