@@ -1,4 +1,4 @@
-import { Bot, Home, Users, Settings, MoreVertical, LogOut, User as UserIcon } from "lucide-react";
+import { Bot, Home, Users, Settings, MoreVertical, LogOut, User as UserIcon, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CommandPalette } from "./CommandPalette";
@@ -94,6 +94,15 @@ export function Header() {
                 <Users className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline ml-1.5">Agents</span>
               </Button>
+              <Button
+                variant={location.pathname === "/audit" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => navigate("/audit")}
+                className="rounded-full h-8 px-3 text-xs font-medium"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline ml-1.5">Audit</span>
+              </Button>
 
               {/* Theme Switcher */}
               <div className="hidden md:block">
@@ -161,6 +170,10 @@ export function Header() {
                   <DropdownMenuItem onClick={() => navigate("/agents")}>
                     <Users className="w-4 h-4 mr-2" />
                     Agents
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/audit")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Audit Trail
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/settings")}>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { HomePage } from "@/pages/HomePage";
 import { AgentsPage } from "@/pages/AgentsPage";
+import { AuditPage } from "@/pages/AuditPage";
 import { ThreadView } from "@/components/ThreadView";
 import { CallbackPage } from "@/pages/CallbackPage";
 import { ProfilePage } from "@/pages/ProfilePage";
@@ -23,6 +24,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/agents" element={<AgentsPage />} />
+                  <Route path="/audit" element={<AuditPage />} />
                   <Route path="/thread/:threadId" element={<ThreadView />} />
                   <Route path="/callback" element={<CallbackPage />} />
                   <Route path="/profile/:userId" element={<ProfilePage />} />
