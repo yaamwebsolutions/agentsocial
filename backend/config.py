@@ -5,7 +5,7 @@ Automatically loads .env file from project root.
 
 import os
 import secrets
-from typing import List, Optional
+from typing import List
 from pathlib import Path
 
 # Get the project root directory
@@ -194,6 +194,21 @@ REDIS_URL = os.getenv("REDIS_URL", "")
 REDIS_ENABLED = bool(REDIS_URL)
 
 # =============================================================================
+# AUDIT TRAIL CONFIG
+# =============================================================================
+# Admin user IDs (comma-separated) who can access audit logs
+ADMIN_USER_IDS = os.getenv("ADMIN_USER_IDS", "")
+
+# Admin email domains (comma-separated) - users with these domains are admins
+ADMIN_EMAIL_DOMAINS = os.getenv("ADMIN_EMAIL_DOMAINS", "")
+
+# Audit log retention in days (0 = keep forever)
+AUDIT_RETENTION_DAYS = int(os.getenv("AUDIT_RETENTION_DAYS", "365"))
+
+# Enable detailed audit logging (logs all API requests)
+AUDIT_DETAILED_LOGGING = os.getenv("AUDIT_DETAILED_LOGGING", "true").lower() == "true"
+
+# =============================================================================
 # AGENT CONFIG
 # =============================================================================
 AGENT_TIMEOUT = int(os.getenv("AGENT_TIMEOUT", "30"))
@@ -232,6 +247,12 @@ def print_config():
     print(f"GitHub API: {'ENABLED' if GITHUB_ENABLED else 'DISABLED'}")
     print(f"Auth0: {'ENABLED' if AUTH0_ENABLED else 'DISABLED'}")
     print(f"Redis: {'ENABLED' if REDIS_ENABLED else 'DISABLED'}")
+    print(
+        f"Audit Trail: {'ENABLED (detailed logging)' if AUDIT_DETAILED_LOGGING else 'ENABLED (basic)'}"
+    )
+    print(
+        f"Admin Users: {len([x for x in ADMIN_USER_IDS.split(',') if x]) if ADMIN_USER_IDS else 0} configured"
+    )
     print("=" * 40)
 
 

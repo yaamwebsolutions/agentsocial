@@ -1,6 +1,8 @@
 """
 Audit Service - Enterprise-grade audit trail logging.
 Tracks all significant events in the system for compliance and debugging.
+
+Integrates with PostgreSQL for permanent storage when available.
 """
 
 import uuid
@@ -13,19 +15,40 @@ logger = logging.getLogger(__name__)
 
 
 class AuditService:
-    """Service for tracking and querying audit logs"""
+    """
+    Service for tracking and querying audit logs.
+
+    Features:
+    - In-memory caching for fast access
+    - PostgreSQL backend for permanent storage
+    - Automatic sync between cache and database
+    - Export capabilities for compliance
+    """
 
     def __init__(self):
-        # In-memory storage for audit logs
+        # In-memory storage for audit logs (cache)
         self._logs: Dict[str, AuditLog] = {}
         self._media_assets: Dict[str, MediaAsset] = {}
         self._conversation_audits: Dict[str, ConversationAudit] = {}
+        self._database_service = None
+
+    def set_database_service(self, db_service):
+        """Set the database service for persistent storage."""
+        self._database_service = db_service
+
+    async def _store_to_database(self, log: AuditLog):
+        """Async store log to database if available."""
+        if self._database_service:
+            try:
+                await self._database_service.store_audit_log(log)
+            except Exception as e:
+                logger.warning(f"Failed to store audit log to database: {e}")
 
     # ========================================================================
     # LOGGING METHODS
     # ========================================================================
 
-    def log_event(
+    async def log_event(
         self,
         event_type: AuditEventType,
         user_id: Optional[str] = None,
@@ -83,7 +106,73 @@ class AuditService:
 
         self._logs[log_id] = log
 
+        # Store to database asynchronously
+        await self._store_to_database(log)
+
         # Log to standard logger for immediate visibility
+        log_level = logging.ERROR if status == "failed" else logging.INFO
+        logger.log(
+            log_level,
+            f"[{event_type.value}] user={user_id} resource={resource_type}:{resource_id} status={status}",
+        )
+
+        return log
+
+    def log_event_sync(
+        self,
+        event_type: AuditEventType,
+        user_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None,
+        status: str = "success",
+        error_message: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        post_id: Optional[str] = None,
+        agent_run_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> AuditLog:
+        """
+        Synchronous version of log_event for use in non-async contexts.
+
+        Returns immediately without waiting for database storage.
+        Database write happens in the background if available.
+        """
+        import asyncio
+
+        log_id = str(uuid.uuid4())
+        log = AuditLog(
+            id=log_id,
+            timestamp=datetime.now(),
+            event_type=event_type,
+            user_id=user_id,
+            session_id=session_id,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            details=details or {},
+            status=status,
+            error_message=error_message,
+            thread_id=thread_id,
+            post_id=post_id,
+            agent_run_id=agent_run_id,
+        )
+
+        self._logs[log_id] = log
+
+        # Schedule database write without blocking
+        if self._database_service:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._store_to_database(log))
+            except RuntimeError:
+                pass  # No event loop running, skip database write
+
+        # Log to standard logger
         log_level = logging.ERROR if status == "failed" else logging.INFO
         logger.log(
             log_level,
@@ -101,7 +190,7 @@ class AuditService:
         parent_id: Optional[str] = None,
     ) -> AuditLog:
         """Log post creation"""
-        return self.log_event(
+        return self.log_event_sync(
             event_type=AuditEventType.POST_CREATE,
             user_id=user_id,
             resource_type="post",
@@ -121,7 +210,7 @@ class AuditService:
         thread_id: Optional[str] = None,
     ) -> AuditLog:
         """Log post deletion"""
-        return self.log_event(
+        return self.log_event_sync(
             event_type=AuditEventType.POST_DELETE,
             user_id=user_id,
             resource_type="post",
@@ -148,7 +237,7 @@ class AuditService:
 
         # Also log start event if this is a completion
         if status == "running":
-            return self.log_event(
+            return self.log_event_sync(
                 event_type=AuditEventType.AGENT_RUN_START,
                 resource_type="agent_run",
                 resource_id=agent_run_id,
@@ -160,7 +249,7 @@ class AuditService:
                 agent_run_id=agent_run_id,
             )
 
-        return self.log_event(
+        return self.log_event_sync(
             event_type=event_type,
             resource_type="agent_run",
             resource_id=agent_run_id,
@@ -217,7 +306,18 @@ class AuditService:
             else AuditEventType.MEDIA_IMAGE_GENERATE
         )
 
-        log = self.log_event(
+        # Store to database if available
+        if self._database_service:
+            try:
+                import asyncio
+
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self._database_service.store_media_asset(asset))
+            except RuntimeError:
+                pass  # No event loop
+
+        log = self.log_event_sync(
             event_type=event_type,
             user_id=user_id,
             resource_type="media",
@@ -248,7 +348,7 @@ class AuditService:
         user_agent: Optional[str] = None,
     ) -> AuditLog:
         """Log authentication events"""
-        return self.log_event(
+        return self.log_event_sync(
             event_type=event_type,
             user_id=user_id,
             resource_type="auth",
@@ -278,7 +378,7 @@ class AuditService:
             else AuditEventType.COMMAND_EXECUTED
         )
 
-        return self.log_event(
+        return self.log_event_sync(
             event_type=event_type,
             user_id=user_id,
             resource_type="command",
@@ -296,7 +396,94 @@ class AuditService:
     # QUERY METHODS
     # ========================================================================
 
-    def get_logs(
+    async def get_logs(
+        self,
+        event_type: Optional[AuditEventType] = None,
+        user_id: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        thread_id: Optional[str] = None,
+        status: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        search_query: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        Query audit logs with filters and pagination.
+
+        Returns:
+            Dict with logs list and pagination info
+        """
+        # If database is available, query from database
+        if self._database_service:
+            try:
+                return await self._database_service.query_audit_logs(
+                    event_type=event_type.value if event_type else None,
+                    user_id=user_id,
+                    resource_type=resource_type,
+                    resource_id=resource_id,
+                    thread_id=thread_id,
+                    status=status,
+                    start_date=start_date,
+                    end_date=end_date,
+                    search_query=search_query,
+                    page=page,
+                    page_size=page_size,
+                )
+            except Exception as e:
+                logger.warning(f"Database query failed, falling back to memory: {e}")
+
+        # Fallback to in-memory query
+        filtered = list(self._logs.values())
+
+        # Apply filters
+        if event_type:
+            filtered = [log for log in filtered if log.event_type == event_type]
+        if user_id:
+            filtered = [log for log in filtered if log.user_id == user_id]
+        if resource_type:
+            filtered = [log for log in filtered if log.resource_type == resource_type]
+        if resource_id:
+            filtered = [log for log in filtered if log.resource_id == resource_id]
+        if thread_id:
+            filtered = [log for log in filtered if log.thread_id == thread_id]
+        if status:
+            filtered = [log for log in filtered if log.status == status]
+        if start_date:
+            filtered = [log for log in filtered if log.timestamp >= start_date]
+        if end_date:
+            filtered = [log for log in filtered if log.timestamp <= end_date]
+        if search_query:
+            filtered = [
+                log
+                for log in filtered
+                if search_query.lower() in str(log.details).lower()
+                or (
+                    log.error_message
+                    and search_query.lower() in log.error_message.lower()
+                )
+            ]
+
+        # Sort by timestamp descending
+        filtered.sort(key=lambda x: x.timestamp, reverse=True)
+
+        # Pagination
+        total_count = len(filtered)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_logs = filtered[start_idx:end_idx]
+
+        return {
+            "logs": paginated_logs,
+            "total_count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "has_more": end_idx < total_count,
+        }
+
+    def get_logs_sync(
         self,
         event_type: Optional[AuditEventType] = None,
         user_id: Optional[str] = None,
@@ -310,12 +497,9 @@ class AuditService:
         page_size: int = 100,
     ) -> Dict[str, Any]:
         """
-        Query audit logs with filters and pagination.
-
-        Returns:
-            Dict with logs list and pagination info
+        Synchronous version of get_logs for backwards compatibility.
+        Only queries in-memory cache.
         """
-        # Start with all logs
         filtered = list(self._logs.values())
 
         # Apply filters
@@ -373,9 +557,7 @@ class AuditService:
         assets.sort(key=lambda x: x.created_at, reverse=True)
         return assets[:limit]
 
-    def get_or_create_conversation_audit(
-        self, thread_id: str
-    ) -> ConversationAudit:
+    def get_or_create_conversation_audit(self, thread_id: str) -> ConversationAudit:
         """Get or create conversation audit for a thread"""
         if thread_id in self._conversation_audits:
             return self._conversation_audits[thread_id]
@@ -439,9 +621,9 @@ class AuditService:
         Returns:
             String representation of exported logs
         """
-        logs = self.get_logs(start_date=start_date, end_date=end_date, page_size=10000)[
-            "logs"
-        ]
+        logs = self.get_logs_sync(
+            start_date=start_date, end_date=end_date, page_size=10000
+        )["logs"]
 
         if format == "json":
             import json
@@ -450,6 +632,7 @@ class AuditService:
 
         elif format == "csv":
             import io
+
             import csv
 
             output = io.StringIO()
@@ -494,8 +677,12 @@ class AuditService:
             event_counts[et] = event_counts.get(et, 0) + 1
 
         # Count media by type
-        video_count = sum(1 for m in self._media_assets.values() if m.asset_type == "video")
-        image_count = sum(1 for m in self._media_assets.values() if m.asset_type == "image")
+        video_count = sum(
+            1 for m in self._media_assets.values() if m.asset_type == "video"
+        )
+        image_count = sum(
+            1 for m in self._media_assets.values() if m.asset_type == "image"
+        )
 
         return {
             "total_logs": total_logs,
