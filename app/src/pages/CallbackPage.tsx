@@ -12,6 +12,29 @@ export function CallbackPage() {
 
   useEffect(() => {
     const processCallback = async () => {
+      // Wait for URL params to be available (fixes race condition on redirect)
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const errorParam = params.get("error");
+
+      // If no params yet, wait a bit and retry (handles browser navigation timing)
+      if (!code && !errorParam) {
+        const timeoutId = setTimeout(() => {
+          processCallback();
+        }, 100);
+        return () => clearTimeout(timeoutId);
+      }
+
+      // If Auth0 returned an error, show it and redirect
+      if (errorParam) {
+        const errorDesc = params.get("error_description") || errorParam;
+        setError(errorDesc);
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 3000);
+        return;
+      }
+
       try {
         await handleCallback();
       } catch (err) {
