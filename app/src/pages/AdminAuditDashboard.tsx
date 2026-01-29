@@ -204,11 +204,6 @@ export function AdminAuditDashboard() {
     refetchData();
     refetchEvents();
     refetchErrors();
-
-  const handleRefresh = () => {
-    refetchData();
-    refetchEvents();
-    refetchErrors();
     refetchConfig();
   };
 
