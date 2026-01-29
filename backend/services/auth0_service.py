@@ -163,7 +163,16 @@ class Auth0Service:
         Returns:
             Token response with access_token, id_token, etc. or None
         """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
         if not self.enabled:
+            logger.error("Auth0 not enabled but exchange_code_for_token was called")
+            return None
+
+        if not self.client_secret or self.client_secret in ("****", "YOUR_CLIENT_SECRET"):
+            logger.error("AUTH0_CLIENT_SECRET is not configured properly")
             return None
 
         try:
@@ -180,7 +189,11 @@ class Auth0Service:
                 )
                 response.raise_for_status()
                 return response.json()
-        except Exception:
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Auth0 token exchange HTTP error: {e.response.status_code} - {e.response.text}")
+            return None
+        except Exception as e:
+            logger.error(f"Auth0 token exchange error: {type(e).__name__}: {e}")
             return None
 
     def get_login_url(
