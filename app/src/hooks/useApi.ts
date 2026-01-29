@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type {
   TimelinePost,
   Thread,
@@ -66,12 +66,25 @@ export function useTimeline(limit: number = 50) {
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pollingEnabled, setPollingEnabled] = useState(true);
+  const failureCountRef = useRef(0);
 
   const refetch = useCallback(() => {
     setLoading(true);
     apiCall<TimelinePost[]>(`/timeline?limit=${limit}`)
-      .then(setPosts)
-      .catch((err) => setError(err.message))
+      .then((data) => {
+        setPosts(data);
+        setError(null);
+        failureCountRef.current = 0;
+        setPollingEnabled(true);
+      })
+      .catch((err) => {
+        setError(err.message);
+        failureCountRef.current += 1;
+        if (failureCountRef.current >= 3) {
+          setPollingEnabled(false);
+        }
+      })
       .finally(() => setLoading(false));
   }, [limit]);
 
@@ -81,17 +94,27 @@ export function useTimeline(limit: number = 50) {
 
   // Auto-refresh timeline every 10 seconds for new posts
   useEffect(() => {
+    if (!pollingEnabled) {
+      return;
+    }
     const interval = setInterval(() => {
       // Silent refresh - don't show loading indicator
       apiCall<TimelinePost[]>(`/timeline?limit=${limit}`)
-        .then(setPosts)
+        .then((data) => {
+          setPosts(data);
+          failureCountRef.current = 0;
+        })
         .catch(() => {
-          // Silently fail on auto-refresh
+          // Silently fail on auto-refresh, but stop polling after repeated failures
+          failureCountRef.current += 1;
+          if (failureCountRef.current >= 3) {
+            setPollingEnabled(false);
+          }
         });
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [limit]);
+  }, [limit, pollingEnabled]);
 
   return { posts, loading, error, refetch };
 }
