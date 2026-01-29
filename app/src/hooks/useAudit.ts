@@ -208,6 +208,7 @@ export function useConversationAudit(threadId: string) {
       audit: ConversationAudit;
       related_logs: any[];
     }>(`/audit/conversations/${threadId}`)
+    auditCall(`/audit/conversations/${threadId}`)
       .then((data) => setAudit(data))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));

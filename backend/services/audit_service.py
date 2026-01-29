@@ -43,12 +43,20 @@ class AuditService:
                 await self._database_service.store_audit_log(log)
             except Exception as e:
                 logger.warning(f"Failed to store audit log to database: {e}")
+    """Service for tracking and querying audit logs"""
+
+    def __init__(self):
+        # In-memory storage for audit logs
+        self._logs: Dict[str, AuditLog] = {}
+        self._media_assets: Dict[str, MediaAsset] = {}
+        self._conversation_audits: Dict[str, ConversationAudit] = {}
 
     # ========================================================================
     # LOGGING METHODS
     # ========================================================================
 
     async def log_event(
+    def log_event(
         self,
         event_type: AuditEventType,
         user_id: Optional[str] = None,
@@ -191,6 +199,7 @@ class AuditService:
     ) -> AuditLog:
         """Log post creation"""
         return self.log_event_sync(
+        return self.log_event(
             event_type=AuditEventType.POST_CREATE,
             user_id=user_id,
             resource_type="post",
@@ -211,6 +220,7 @@ class AuditService:
     ) -> AuditLog:
         """Log post deletion"""
         return self.log_event_sync(
+        return self.log_event(
             event_type=AuditEventType.POST_DELETE,
             user_id=user_id,
             resource_type="post",
@@ -238,6 +248,7 @@ class AuditService:
         # Also log start event if this is a completion
         if status == "running":
             return self.log_event_sync(
+            return self.log_event(
                 event_type=AuditEventType.AGENT_RUN_START,
                 resource_type="agent_run",
                 resource_id=agent_run_id,
@@ -250,6 +261,7 @@ class AuditService:
             )
 
         return self.log_event_sync(
+        return self.log_event(
             event_type=event_type,
             resource_type="agent_run",
             resource_id=agent_run_id,
@@ -318,6 +330,7 @@ class AuditService:
                 pass  # No event loop
 
         log = self.log_event_sync(
+        log = self.log_event(
             event_type=event_type,
             user_id=user_id,
             resource_type="media",
@@ -349,6 +362,7 @@ class AuditService:
     ) -> AuditLog:
         """Log authentication events"""
         return self.log_event_sync(
+        return self.log_event(
             event_type=event_type,
             user_id=user_id,
             resource_type="auth",
@@ -379,6 +393,7 @@ class AuditService:
         )
 
         return self.log_event_sync(
+        return self.log_event(
             event_type=event_type,
             user_id=user_id,
             resource_type="command",
@@ -397,6 +412,7 @@ class AuditService:
     # ========================================================================
 
     async def get_logs(
+    def get_logs(
         self,
         event_type: Optional[AuditEventType] = None,
         user_id: Optional[str] = None,
@@ -500,6 +516,7 @@ class AuditService:
         Synchronous version of get_logs for backwards compatibility.
         Only queries in-memory cache.
         """
+        # Start with all logs
         filtered = list(self._logs.values())
 
         # Apply filters
@@ -558,6 +575,9 @@ class AuditService:
         return assets[:limit]
 
     def get_or_create_conversation_audit(self, thread_id: str) -> ConversationAudit:
+    def get_or_create_conversation_audit(
+        self, thread_id: str
+    ) -> ConversationAudit:
         """Get or create conversation audit for a thread"""
         if thread_id in self._conversation_audits:
             return self._conversation_audits[thread_id]
@@ -624,6 +644,9 @@ class AuditService:
         logs = self.get_logs_sync(
             start_date=start_date, end_date=end_date, page_size=10000
         )["logs"]
+        logs = self.get_logs(start_date=start_date, end_date=end_date, page_size=10000)[
+            "logs"
+        ]
 
         if format == "json":
             import json
@@ -683,6 +706,8 @@ class AuditService:
         image_count = sum(
             1 for m in self._media_assets.values() if m.asset_type == "image"
         )
+        video_count = sum(1 for m in self._media_assets.values() if m.asset_type == "video")
+        image_count = sum(1 for m in self._media_assets.values() if m.asset_type == "image")
 
         return {
             "total_logs": total_logs,

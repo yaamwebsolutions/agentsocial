@@ -1344,6 +1344,9 @@ async def get_media_assets(
 
 @app.get("/audit/conversations", tags=["Audit"])
 async def get_conversation_audits(_user: Optional[dict] = Depends(get_optional_user)):
+async def get_conversation_audits(
+    _user: Optional[dict] = Depends(get_optional_user)
+):
     """
     Get all conversation audits.
 
@@ -1379,6 +1382,7 @@ async def get_conversation_audit(
 
     # Get related logs for this thread
     logs_result = audit_service.get_logs_sync(thread_id=thread_id, page_size=100)
+    logs_result = audit_service.get_logs(thread_id=thread_id, page_size=100)
 
     return {
         "audit": audit,
