@@ -1561,7 +1561,6 @@ async def get_comprehensive_audit(
     from datetime import datetime
 
     from services.audit_service import audit_service
-    from models import AuditEventType
 
     # Parse dates
     start_dt = datetime.fromisoformat(start_date) if start_date else None

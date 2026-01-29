@@ -8,7 +8,7 @@ import asyncio
 import httpx
 import json
 import time
-from typing import Dict, List, Any
+from typing import Dict
 from datetime import datetime
 
 # Configuration
@@ -230,7 +230,7 @@ class TestBot:
     async def test_post_with_agent_mention(self):
         """Test creating a post with agent mention"""
         start = time.time()
-        test_text = f"@grok Tell me a joke about testing"
+        test_text = "@grok Tell me a joke about testing"
         result = await self._post("/posts", json={"text": test_text})
         duration = time.time() - start
 

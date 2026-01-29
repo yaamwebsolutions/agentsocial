@@ -5,7 +5,7 @@ Allows agents to fetch real-time web search results.
 
 import httpx
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 from config import SERPER_API_KEY, SERPER_API_URL, SERPER_ENABLED, AGENT_TIMEOUT
 
 logger = logging.getLogger(__name__)

@@ -10,7 +10,7 @@
 import os
 import httpx
 from plugins import Plugin, PluginMetadata, PluginHook, hook
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 
 class WebhookPlugin(Plugin):

@@ -334,14 +334,12 @@ def track_endpoint(monitor: "MonitoringService"):
         async def wrapper(*args, **kwargs):
             start = time.time()
             status_code = 200
-            error = None
 
             try:
                 result = await func(*args, **kwargs)
                 return result
-            except Exception as e:
+            except Exception:
                 status_code = 500
-                error = str(e)
                 raise
             finally:
                 duration = time.time() - start

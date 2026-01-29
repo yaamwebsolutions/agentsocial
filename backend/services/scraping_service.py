@@ -92,7 +92,6 @@ class ScrapingService:
 
         try:
             from html.parser import HTMLParser
-            import re
 
             class TextExtractor(HTMLParser):
                 def __init__(self):

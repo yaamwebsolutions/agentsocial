@@ -232,7 +232,7 @@ def print_config():
     print(f"Log Level: {BACKEND_LOG_LEVEL}")
     print(f"Agents Config: {AGENTS_CONFIG_PATH}")
     print(f"Auth Required: {AUTH_REQUIRED}")
-    print(f"\n--- Services Status ---")
+    print("\n--- Services Status ---")
     print(f"DeepSeek LLM: {'ENABLED' if DEEPSEEK_ENABLED else 'DISABLED (using mock)'}")
     print(
         f"PostgreSQL DB: {'ENABLED' if DATABASE_ENABLED else 'DISABLED (using in-memory)'}"

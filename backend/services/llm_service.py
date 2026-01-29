@@ -4,7 +4,6 @@ Falls back to MockLLM if API key is not configured.
 """
 
 import httpx
-import asyncio
 import logging
 from typing import List, Dict, Optional
 from config import (
@@ -204,7 +203,7 @@ class MockLLM:
 
     @staticmethod
     def _factcheck_response(context: str) -> str:
-        return f"🔍 **Claim Analysis**\n\n**Points to verify:**\n• Specific data points mentioned\n• Timeline accuracy\n• Source attribution\n\n**Status:** Requires fact-checking from reliable sources."
+        return "🔍 **Claim Analysis**\n\n**Points to verify:**\n• Specific data points mentioned\n• Timeline accuracy\n• Source attribution\n\n**Status:** Requires fact-checking from reliable sources."
 
     @staticmethod
     def _summarizer_response(context: str) -> str:
