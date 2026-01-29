@@ -1296,7 +1296,7 @@ async def get_audit_logs(
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 100,
-    _user: Optional[dict] = Depends(get_optional_user),
+    _user: dict = Depends(require_user_for_write),
 ):
     """
     Get audit logs with filtering and pagination.
@@ -1360,7 +1360,7 @@ async def get_media_assets(
     thread_id: Optional[str] = None,
     user_id: Optional[str] = None,
     limit: int = 50,
-    _user: Optional[dict] = Depends(get_optional_user),
+    _user: dict = Depends(require_user_for_write),
 ):
     """
     Get generated media assets (videos, images).

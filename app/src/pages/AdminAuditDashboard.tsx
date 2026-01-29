@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   useAdminComprehensiveAudit,
   useSystemEvents,
@@ -161,9 +162,24 @@ function timeAgo(timestamp: string): string {
 
 export function AdminAuditDashboard() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [userId, setUserId] = useState("");
   const [errorDays, setErrorDays] = useState(7);
+
+  // Require authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <Card className="border-0 rounded-2xl bg-muted/30 p-8 text-center">
+          <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground mb-4">Please log in to access admin audit features.</p>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
+        </Card>
+      </div>
+    );
+  }
 
   // Fetch comprehensive audit data
   const {
