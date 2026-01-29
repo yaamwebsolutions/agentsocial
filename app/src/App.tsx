@@ -5,6 +5,7 @@ import { AgentsPage } from "@/pages/AgentsPage";
 import { AuditPage } from "@/pages/AuditPage";
 import { AdminAuditDashboard } from "@/pages/AdminAuditDashboard";
 import { AdminUserActivity } from "@/pages/AdminUserActivity";
+import { AdminPage } from "@/pages/AdminPage";
 import { ThreadView } from "@/components/ThreadView";
 import { CallbackPage } from "@/pages/CallbackPage";
 import { ProfilePage } from "@/pages/ProfilePage";
@@ -31,6 +32,7 @@ function App() {
                   <Route path="/callback" element={<CallbackPage />} />
                   <Route path="/profile/:userId" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/audit" element={<AdminAuditDashboard />} />
                   <Route path="/admin/audit/user/:userId" element={<AdminUserActivity />} />
                 </Routes>
