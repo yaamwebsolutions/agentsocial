@@ -19,7 +19,9 @@ const API_BASE =
   "https://api.yaam.click";
 
 function getStoredAccessToken(): string | null {
-  const keys = ["auth0_id_token", "auth0_access_token", "access_token"];
+  // Use access_token for API calls, NOT id_token
+  // id_token is for authentication/identification, access_token is for API authorization
+  const keys = ["auth0_access_token", "access_token"];
   for (const key of keys) {
     const token = localStorage.getItem(key);
     if (token) return token;
