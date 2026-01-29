@@ -23,7 +23,11 @@ from models import (
     AuditEventType,
 )
 from middleware.audit_middleware import AuditMiddleware
-from middleware.auth_middleware import get_current_user, get_optional_user, get_token_payload
+from middleware.auth_middleware import (
+    get_current_user,
+    get_optional_user,
+    get_token_payload,
+)
 from middleware.admin_middleware import require_admin
 from agents import list_agents, get_agent
 from store import store
@@ -1344,9 +1348,6 @@ async def get_media_assets(
 
 @app.get("/audit/conversations", tags=["Audit"])
 async def get_conversation_audits(_user: Optional[dict] = Depends(get_optional_user)):
-async def get_conversation_audits(
-    _user: Optional[dict] = Depends(get_optional_user)
-):
     """
     Get all conversation audits.
 
@@ -1436,7 +1437,7 @@ async def admin_whoami(
             "3. Set ADMIN_EMAIL_DOMAINS to empty: ADMIN_EMAIL_DOMAINS=",
             "4. Restart the backend",
         ],
-        "example": f'ADMIN_USER_IDS={result.get("user_id") or result.get("sub", "your_user_id_here")}',
+        "example": f"ADMIN_USER_IDS={result.get('user_id') or result.get('sub', 'your_user_id_here')}",
     }
 
     return result
@@ -1611,9 +1612,7 @@ async def get_comprehensive_audit(
 
 
 @app.get("/admin/audit/system-events", tags=["Audit"])
-async def get_system_events(
-    hours: int = 24, _admin: dict = Depends(require_admin)
-):
+async def get_system_events(hours: int = 24, _admin: dict = Depends(require_admin)):
     """
     Get recent system events for monitoring (ADMIN ONLY).
 
