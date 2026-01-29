@@ -1161,6 +1161,10 @@ async def auth0_callback(request: dict):
     Returns:
         Dictionary with access_token, id_token, and user information
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     from services.auth0_service import get_auth0_service
 
     auth0_service = get_auth0_service()
@@ -1172,19 +1176,26 @@ async def auth0_callback(request: dict):
     redirect_uri = request.get("redirect_uri", "https://yaam.click/callback")
     state = request.get("state")
 
+    logger.info(f"Auth0 callback: code_present={bool(code)}, state_present={bool(state)}, redirect_uri={redirect_uri}")
+
     if not code:
         raise HTTPException(status_code=400, detail="Missing authorization code")
     if not verify_oauth_state(state):
+        state_preview = state[:20] + "..." if state else "None"
+        logger.warning(f"Auth0 callback: Invalid OAuth state (state={state_preview})")
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
 
     # Exchange code for tokens
     token_response = await auth0_service.exchange_code_for_token(code, redirect_uri)
 
     if not token_response:
+        logger.error("Auth0 callback: Failed to exchange code for token")
         raise HTTPException(status_code=400, detail="Failed to exchange code for token")
 
     access_token = token_response.get("access_token")
     id_token = token_response.get("id_token")
+
+    logger.info(f"Auth0 callback: Got tokens (access_token_present={bool(access_token)}, id_token_present={bool(id_token)})")
 
     # Get user info
     user_info = await auth0_service.get_user_info(access_token)
