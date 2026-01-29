@@ -40,7 +40,10 @@ async function auditCall<T>(endpoint: string, options?: RequestInit): Promise<T>
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API Error: ${response.status}`);
+    const error = new Error(errorData.detail || `API Error: ${response.status}`);
+    // Add status code to error for handling auth failures
+    (error as any).status = response.status;
+    throw error;
   }
 
   return response.json();
@@ -66,8 +69,14 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
   const [logs, setLogs] = useState<AuditTrailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const fetchLogs = useCallback(() => {
+    // Don't retry if there was an auth error
+    if (isAuthError) {
+      return;
+    }
+
     setLoading(true);
     const params = new URLSearchParams();
     if (options.event_type) params.append("event_type", options.event_type);
@@ -81,9 +90,17 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
 
     auditCall<AuditTrailResponse>(`/audit/logs?${params.toString()}`)
       .then(setLogs)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        // Stop all retries on 401 authentication errors
+        if (err.status === 401 || err.message.includes("401")) {
+          setIsAuthError(true);
+          setError("Authentication required. Please log in.");
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, [options]);
+  }, [options, isAuthError]);
 
   useEffect(() => {
     fetchLogs();
@@ -91,11 +108,11 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
 
   // Auto-refresh every 30 seconds if enabled AND no error
   useEffect(() => {
-    if (options.autoRefresh && !error) {
+    if (options.autoRefresh && !error && !isAuthError) {
       const interval = setInterval(fetchLogs, 30000);
       return () => clearInterval(interval);
     }
-  }, [fetchLogs, options.autoRefresh, error]);
+  }, [fetchLogs, options.autoRefresh, error, isAuthError]);
 
   return { logs, loading, error, refetch: fetchLogs };
 }
@@ -108,14 +125,24 @@ export function useAuditStats() {
   const [stats, setStats] = useState<AuditStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const refetch = useCallback(() => {
+    if (isAuthError) return;
+
     setLoading(true);
     auditCall<AuditStats>("/audit/stats")
       .then(setStats)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err.status === 401 || err.message.includes("401")) {
+          setIsAuthError(true);
+          setError("Authentication required. Please log in.");
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthError]);
 
   useEffect(() => {
     refetch();
@@ -139,8 +166,11 @@ export function useMediaAssets(options: UseMediaAssetsOptions = {}) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const refetch = useCallback(() => {
+    if (isAuthError) return;
+
     setLoading(true);
     const params = new URLSearchParams();
     if (options.asset_type) params.append("asset_type", options.asset_type);
@@ -152,9 +182,16 @@ export function useMediaAssets(options: UseMediaAssetsOptions = {}) {
       `/audit/media?${params.toString()}`
     )
       .then((data) => setAssets(data.assets))
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err.status === 401 || err.message.includes("401")) {
+          setIsAuthError(true);
+          setError("Authentication required. Please log in.");
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, [options]);
+  }, [options, isAuthError]);
 
   useEffect(() => {
     refetch();
@@ -171,16 +208,26 @@ export function useConversationAudits() {
   const [conversations, setConversations] = useState<ConversationAudit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
 
   const refetch = useCallback(() => {
+    if (isAuthError) return;
+
     setLoading(true);
     auditCall<{ conversations: ConversationAudit[]; count: number }>(
       "/audit/conversations"
     )
       .then((data) => setConversations(data.conversations))
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err.status === 401 || err.message.includes("401")) {
+          setIsAuthError(true);
+          setError("Authentication required. Please log in.");
+        } else {
+          setError(err.message);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthError]);
 
   useEffect(() => {
     refetch();
