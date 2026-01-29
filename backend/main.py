@@ -23,7 +23,7 @@ from models import (
     AuditEventType,
 )
 from middleware.audit_middleware import AuditMiddleware
-from middleware.auth_middleware import get_current_user, get_optional_user
+from middleware.auth_middleware import get_current_user, get_optional_user, get_token_payload
 from middleware.admin_middleware import require_admin
 from agents import list_agents, get_agent
 from store import store
@@ -1389,6 +1389,53 @@ async def get_conversation_audit(
 # =============================================================================
 # ADMIN AUDIT ENDPOINTS (Admin Only)
 # =============================================================================
+
+
+@app.get("/admin/whoami", tags=["Admin"])
+async def admin_whoami(
+    user: Optional[dict] = Depends(get_current_user),
+):
+    """
+    Get current user information for admin configuration.
+
+    Returns the user's ID and email so you can configure ADMIN_USER_IDS.
+    Use this to find your user ID to set as the sole admin.
+    """
+    # Get the full token payload which contains the user_id
+    payload = await get_token_payload()
+
+    if not payload:
+        return {
+            "authenticated": False,
+            "message": "Not authenticated. Please log in first.",
+            "instructions": "After logging in, visit this page again to see your user ID.",
+        }
+
+    result = {
+        "authenticated": True,
+        "user_id": getattr(payload, "user_id", None),
+        "email": getattr(payload, "email", None),
+        "name": getattr(payload, "name", None),
+        "sub": getattr(payload, "sub", None),
+        "iss": getattr(payload, "iss", None),
+    }
+
+    # Add raw payload for debugging
+    if hasattr(payload, "dict"):
+        result["raw_payload"] = payload.dict()
+
+    # Add configuration instructions
+    result["instructions"] = {
+        "how_to_configure_admin": [
+            "1. Copy your 'user_id' or 'sub' field above",
+            "2. Set ADMIN_USER_IDS environment variable: ADMIN_USER_IDS=your_user_id_here",
+            "3. Set ADMIN_EMAIL_DOMAINS to empty: ADMIN_EMAIL_DOMAINS=",
+            "4. Restart the backend",
+        ],
+        "example": f'ADMIN_USER_IDS={result.get("user_id") or result.get("sub", "your_user_id_here")}',
+    }
+
+    return result
 
 
 @app.get("/admin/audit/logs/export", tags=["Audit"])
