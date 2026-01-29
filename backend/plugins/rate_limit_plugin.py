@@ -10,7 +10,7 @@
 import time
 from collections import defaultdict
 from plugins import Plugin, PluginMetadata, PluginHook, hook
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 
 class RateLimitPlugin(Plugin):

@@ -163,3 +163,71 @@ export interface AuditStats {
   video_count: number;
   image_count: number;
 }
+
+// =============================================================================
+// ADMIN AUDIT TYPES
+// =============================================================================
+
+export interface AdminComprehensiveAuditResponse {
+  logs: AuditLog[];
+  media_assets: MediaAsset[];
+  conversations: ConversationAudit[];
+  stats: AuditStats;
+  system_events: SystemEvent[];
+}
+
+export interface SystemEvent {
+  id: string;
+  timestamp: string;
+  event_type: string;
+  description: string;
+  severity: "info" | "warning" | "error" | "critical";
+  details: Record<string, any>;
+}
+
+export interface UserActivitySummary {
+  user_id: string;
+  total_actions: number;
+  first_seen: string;
+  last_seen: string;
+  action_breakdown: Record<string, number>;
+  ip_addresses: string[];
+  user_agents: string[];
+  conversations_created: number;
+  media_generated: number;
+  errors_encountered: number;
+}
+
+export interface ErrorAnalysis {
+  error_type: string;
+  count: number;
+  first_occurrence: string;
+  last_occurrence: string;
+  affected_users: number;
+  sample_errors: Array<{
+    timestamp: string;
+    user_id?: string;
+    message: string;
+    details: Record<string, any>;
+  }>;
+}
+
+export interface SystemConfig {
+  audit_enabled: boolean;
+  database_enabled: boolean;
+  retention_days: number;
+  detailed_logging: boolean;
+  admin_user_ids_count: number;
+  admin_email_domains: string[];
+  auth0_enabled: boolean;
+}
+
+export interface ExportOptions {
+  format: "json" | "csv";
+  start_date?: string;
+  end_date?: string;
+  event_type?: AuditEventType;
+  user_id?: string;
+  resource_type?: string;
+  include_details?: boolean;
+}

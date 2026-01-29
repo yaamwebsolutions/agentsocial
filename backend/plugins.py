@@ -19,8 +19,6 @@ from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass, field
 from enum import Enum
 
-from config import AGENTS_CONFIG_PATH
-
 
 # =============================================================================
 # Plugin Types

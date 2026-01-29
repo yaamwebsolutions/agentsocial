@@ -6,10 +6,9 @@
 #
 # =============================================================================
 
-import pytest
 import json
 from pathlib import Path
-from agents import list_agents, get_agent, Agent
+from agents import list_agents, get_agent
 
 
 # =============================================================================

@@ -5,6 +5,12 @@ import type {
   MediaAsset,
   ConversationAudit,
   AuditEventType,
+  AdminComprehensiveAuditResponse,
+  SystemEvent,
+  UserActivitySummary,
+  ErrorAnalysis,
+  SystemConfig,
+  ExportOptions,
 } from "@/types/api";
 
 const API_BASE =
@@ -198,6 +204,10 @@ export function useConversationAudit(threadId: string) {
   const refetch = useCallback(() => {
     if (!threadId) return;
     setLoading(true);
+    auditCall<{
+      audit: ConversationAudit;
+      related_logs: any[];
+    }>(`/audit/conversations/${threadId}`)
     auditCall(`/audit/conversations/${threadId}`)
       .then((data) => setAudit(data))
       .catch((err) => setError(err.message))
@@ -209,4 +219,195 @@ export function useConversationAudit(threadId: string) {
   }, [refetch]);
 
   return { audit, loading, error, refetch };
+}
+
+// ============================================================================
+// ADMIN AUDIT HOOKS
+// ============================================================================
+
+interface UseAdminAuditOptions {
+  start_date?: string;
+  end_date?: string;
+  event_type?: AuditEventType;
+  user_id?: string;
+  resource_type?: string;
+  status?: string;
+}
+
+export function useAdminComprehensiveAudit(options: UseAdminAuditOptions = {}) {
+  const [data, setData] = useState<AdminComprehensiveAuditResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (options.start_date) params.append("start_date", options.start_date);
+    if (options.end_date) params.append("end_date", options.end_date);
+    if (options.event_type) params.append("event_type", options.event_type);
+    if (options.user_id) params.append("user_id", options.user_id);
+    if (options.resource_type) params.append("resource_type", options.resource_type);
+    if (options.status) params.append("status", options.status);
+
+    auditCall<AdminComprehensiveAuditResponse>(
+      `/admin/audit/comprehensive?${params.toString()}`
+    )
+      .then(setData)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [options]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { data, loading, error, refetch };
+}
+
+export function useSystemEvents(limit: number = 100) {
+  const [events, setEvents] = useState<SystemEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    auditCall<{ events: SystemEvent[] }>(`/admin/audit/system-events?limit=${limit}`)
+      .then((data) => setEvents(data.events))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [limit]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { events, loading, error, refetch };
+}
+
+export function useUserActivity(userId: string) {
+  const [activity, setActivity] = useState<UserActivitySummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    if (!userId) return;
+    setLoading(true);
+    auditCall<UserActivitySummary>(`/admin/audit/user-activity/${userId}`)
+      .then(setActivity)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { activity, loading, error, refetch };
+}
+
+export function useErrorAnalysis(days: number = 7) {
+  const [errors, setErrors] = useState<ErrorAnalysis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    auditCall<{ errors: ErrorAnalysis[] }>(`/admin/audit/errors?days=${days}`)
+      .then((data) => setErrors(data.errors))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [days]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { errors, loading, error, refetch };
+}
+
+export function useSystemConfig() {
+  const [config, setConfig] = useState<SystemConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refetch = useCallback(() => {
+    setLoading(true);
+    auditCall<SystemConfig>("/admin/audit/config")
+      .then(setConfig)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  return { config, loading, error, refetch };
+}
+
+export function useExportAuditLogs() {
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const exportLogs = useCallback(async (options: ExportOptions) => {
+    setExporting(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+      params.append("format", options.format);
+      if (options.start_date) params.append("start_date", options.start_date);
+      if (options.end_date) params.append("end_date", options.end_date);
+      if (options.event_type) params.append("event_type", options.event_type);
+      if (options.user_id) params.append("user_id", options.user_id);
+      if (options.resource_type) params.append("resource_type", options.resource_type);
+      if (options.include_details) params.append("include_details", "true");
+
+      const response = await fetch(`${API_BASE}/admin/audit/logs/export?${params.toString()}`, {
+        headers: {
+          ...(getStoredAccessToken()
+            ? { Authorization: `Bearer ${getStoredAccessToken()}` }
+            : {}),
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Export failed: ${response.status}`);
+      }
+
+      // Handle different response types based on format
+      if (options.format === "json") {
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `audit-export-${new Date().toISOString()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // CSV format
+        const text = await response.text();
+        const blob = new Blob([text], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `audit-export-${new Date().toISOString()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+      return false;
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  return { exportLogs, exporting, error };
 }

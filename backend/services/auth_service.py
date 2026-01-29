@@ -7,9 +7,8 @@ import os
 import secrets
 import httpx
 import logging
-import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)

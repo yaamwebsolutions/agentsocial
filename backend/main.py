@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime, timedelta
 import logging
 import uvicorn
 import jwt
@@ -19,8 +20,15 @@ from models import (
     CreatePostResponse,
     User,
     UserStats,
+    AuditEventType,
 )
-from middleware.auth_middleware import get_current_user, get_optional_user
+from middleware.audit_middleware import AuditMiddleware
+from middleware.auth_middleware import (
+    get_current_user,
+    get_optional_user,
+    get_token_payload,
+)
+from middleware.admin_middleware import require_admin
 from agents import list_agents, get_agent
 from store import store
 from orchestrator import orchestrator
@@ -162,6 +170,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add audit middleware for automatic request logging
+app.add_middleware(AuditMiddleware)
 
 
 async def require_user(
@@ -1336,9 +1347,7 @@ async def get_media_assets(
 
 
 @app.get("/audit/conversations", tags=["Audit"])
-async def get_conversation_audits(
-    _user: Optional[dict] = Depends(get_optional_user)
-):
+async def get_conversation_audits(_user: Optional[dict] = Depends(get_optional_user)):
     """
     Get all conversation audits.
 
@@ -1373,11 +1382,434 @@ async def get_conversation_audit(
         raise HTTPException(status_code=404, detail="Conversation audit not found")
 
     # Get related logs for this thread
+    logs_result = audit_service.get_logs_sync(thread_id=thread_id, page_size=100)
     logs_result = audit_service.get_logs(thread_id=thread_id, page_size=100)
 
     return {
         "audit": audit,
         "related_logs": logs_result["logs"],
+    }
+
+
+# =============================================================================
+# ADMIN AUDIT ENDPOINTS (Admin Only)
+# =============================================================================
+
+
+@app.get("/admin/whoami", tags=["Admin"])
+async def admin_whoami(
+    user: Optional[dict] = Depends(get_current_user),
+):
+    """
+    Get current user information for admin configuration.
+
+    Returns the user's ID and email so you can configure ADMIN_USER_IDS.
+    Use this to find your user ID to set as the sole admin.
+    """
+    # Get the full token payload which contains the user_id
+    payload = await get_token_payload()
+
+    if not payload:
+        return {
+            "authenticated": False,
+            "message": "Not authenticated. Please log in first.",
+            "instructions": "After logging in, visit this page again to see your user ID.",
+        }
+
+    result = {
+        "authenticated": True,
+        "user_id": getattr(payload, "user_id", None),
+        "email": getattr(payload, "email", None),
+        "name": getattr(payload, "name", None),
+        "sub": getattr(payload, "sub", None),
+        "iss": getattr(payload, "iss", None),
+    }
+
+    # Add raw payload for debugging
+    if hasattr(payload, "dict"):
+        result["raw_payload"] = payload.dict()
+
+    # Add configuration instructions
+    result["instructions"] = {
+        "how_to_configure_admin": [
+            "1. Copy your 'user_id' or 'sub' field above",
+            "2. Set ADMIN_USER_IDS environment variable: ADMIN_USER_IDS=your_user_id_here",
+            "3. Set ADMIN_EMAIL_DOMAINS to empty: ADMIN_EMAIL_DOMAINS=",
+            "4. Restart the backend",
+        ],
+        "example": f"ADMIN_USER_IDS={result.get('user_id') or result.get('sub', 'your_user_id_here')}",
+    }
+
+    return result
+
+
+@app.get("/admin/audit/logs/export", tags=["Audit"])
+async def export_audit_logs(
+    format: str = "json",
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Export audit logs in JSON or CSV format (ADMIN ONLY).
+
+    Query Parameters:
+        format: Export format - "json" or "csv" (default: json)
+        start_date: Start date filter (ISO 8601 format)
+        end_date: End date filter (ISO 8601 format)
+
+    Returns downloadable file with audit logs.
+    """
+    from datetime import datetime
+    from fastapi.responses import Response
+    import json
+
+    from services.audit_service import audit_service
+
+    # Parse dates if provided
+    start_dt = datetime.fromisoformat(start_date) if start_date else None
+    end_dt = datetime.fromisoformat(end_date) if end_date else None
+
+    # Get all logs (no pagination for export)
+    result = audit_service.get_logs_sync(
+        start_date=start_dt, end_date=end_dt, page_size=100000
+    )
+
+    if format == "csv":
+        import io
+
+        import csv
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(
+            [
+                "id",
+                "timestamp",
+                "event_type",
+                "user_id",
+                "resource_type",
+                "resource_id",
+                "status",
+                "thread_id",
+                "post_id",
+                "ip_address",
+                "user_agent",
+                "details",
+                "error_message",
+            ]
+        )
+        for log in result["logs"]:
+            writer.writerow(
+                [
+                    log.id,
+                    log.timestamp,
+                    log.event_type.value,
+                    log.user_id,
+                    log.resource_type,
+                    log.resource_id,
+                    log.status,
+                    log.thread_id,
+                    log.post_id,
+                    log.ip_address,
+                    log.user_agent,
+                    json.dumps(log.details),
+                    log.error_message,
+                ]
+            )
+
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=audit_logs.csv"},
+        )
+
+    # Default to JSON
+    return Response(
+        content=json.dumps(
+            [log.dict() for log in result["logs"]],
+            default=str,
+            indent=2,
+        ),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=audit_logs.json"},
+    )
+
+
+@app.get("/admin/audit/comprehensive", tags=["Audit"])
+async def get_comprehensive_audit(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    event_types: Optional[str] = None,
+    user_ids: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 100,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Get comprehensive audit logs with advanced filtering (ADMIN ONLY).
+
+    Query Parameters:
+        start_date: Start date filter (ISO 8601 format)
+        end_date: End date filter (ISO 8601 format)
+        event_types: Comma-separated list of event types to filter
+        user_ids: Comma-separated list of user IDs to filter
+        search: Search query for details/error messages
+        page: Page number (default: 1)
+        page_size: Results per page (default: 100, max: 1000)
+    """
+    from datetime import datetime
+
+    from services.audit_service import audit_service
+
+    # Parse dates
+    start_dt = datetime.fromisoformat(start_date) if start_date else None
+    end_dt = datetime.fromisoformat(end_date) if end_date else None
+
+    # Parse event types
+    event_type_list = None
+    if event_types:
+        event_type_list = event_types.split(",")
+
+    # Parse user IDs
+    user_id_list = None
+    if user_ids:
+        user_id_list = user_ids.split(",")
+
+    # Limit page size
+    page_size = min(page_size, 1000)
+
+    # For now, use the sync version with first user ID filter
+    # TODO: Update to use async version with multiple filters
+    result = audit_service.get_logs_sync(
+        user_id=user_id_list[0] if user_id_list else None,
+        start_date=start_dt,
+        end_date=end_dt,
+        page=page,
+        page_size=page_size,
+    )
+
+    # Apply additional filters post-query
+    filtered_logs = result["logs"]
+    if event_type_list:
+        filtered_logs = [
+            log for log in filtered_logs if log.event_type.value in event_type_list
+        ]
+    if search:
+        search_lower = search.lower()
+        filtered_logs = [
+            log
+            for log in filtered_logs
+            if search_lower in str(log.details).lower()
+            or (log.error_message and search_lower in log.error_message.lower())
+        ]
+
+    result["logs"] = filtered_logs
+    result["total_count"] = len(filtered_logs)
+
+    return result
+
+
+@app.get("/admin/audit/system-events", tags=["Audit"])
+async def get_system_events(hours: int = 24, _admin: dict = Depends(require_admin)):
+    """
+    Get recent system events for monitoring (ADMIN ONLY).
+
+    Returns system-related events like errors, startup, etc.
+
+    Query Parameters:
+        hours: Number of hours to look back (default: 24)
+    """
+    from services.audit_service import audit_service
+    from models import AuditEventType
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(hours=hours)
+
+    # Get system-related events
+    result = audit_service.get_logs_sync(
+        start_date=start_date,
+        end_date=end_date,
+        page_size=1000,
+    )
+
+    # Filter to system events
+    system_events = [
+        log
+        for log in result["logs"]
+        if log.event_type
+        in [
+            AuditEventType.SYSTEM_ERROR,
+            AuditEventType.SYSTEM_STARTUP,
+            AuditEventType.COMMAND_FAILED,
+            AuditEventType.AGENT_RUN_ERROR,
+            AuditEventType.AUTH_FAILED,
+        ]
+    ]
+
+    # Group by event type
+    events_by_type: dict = {}
+    for log in system_events:
+        event_type = log.event_type.value
+        if event_type not in events_by_type:
+            events_by_type[event_type] = []
+        events_by_type[event_type].append(log)
+
+    return {
+        "time_range": f"Last {hours} hours",
+        "events": events_by_type,
+        "total_count": len(system_events),
+    }
+
+
+@app.get("/admin/audit/user-activity/{user_id}", tags=["Audit"])
+async def get_user_activity(
+    user_id: str,
+    days: int = 7,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Get detailed activity for a specific user (ADMIN ONLY).
+
+    Returns all user actions, posts, agent interactions, and media generation.
+
+    Query Parameters:
+        days: Number of days to look back (default: 7)
+    """
+    from services.audit_service import audit_service
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=days)
+
+    # Get all user activities
+    result = audit_service.get_logs_sync(
+        user_id=user_id,
+        start_date=start_date,
+        end_date=end_date,
+        page_size=1000,
+    )
+
+    # Group by resource type
+    activities_by_type = {}
+    for log in result["logs"]:
+        resource_type = log.resource_type or "unknown"
+        if resource_type not in activities_by_type:
+            activities_by_type[resource_type] = []
+        activities_by_type[resource_type].append(log)
+
+    # Get user statistics
+    stats = audit_service.get_stats()
+
+    # Get user's media assets
+    media_assets = audit_service.get_media_assets(user_id=user_id, limit=100)
+
+    return {
+        "user_id": user_id,
+        "time_range": f"Last {days} days",
+        "activities": activities_by_type,
+        "total_events": len(result["logs"]),
+        "media_generated": len(media_assets),
+        "system_stats": stats,
+    }
+
+
+@app.get("/admin/audit/media-expired", tags=["Audit"])
+async def get_expired_media(
+    days: int = 30,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Get media assets older than specified days (ADMIN ONLY).
+
+    Useful for cleanup and retention policy management.
+
+    Query Parameters:
+        days: Age threshold in days (default: 30)
+    """
+    from services.audit_service import audit_service
+
+    cutoff_date = datetime.now() - timedelta(days=days)
+
+    # Get all media assets
+    all_media = audit_service.get_media_assets(limit=10000)
+
+    # Filter for old assets
+    expired_media = [asset for asset in all_media if asset.created_at < cutoff_date]
+
+    return {
+        "cutoff_date": cutoff_date.isoformat(),
+        "expired_count": len(expired_media),
+        "expired_media": [
+            {
+                "id": asset.id,
+                "type": asset.asset_type,
+                "url": asset.url,
+                "created_at": asset.created_at.isoformat(),
+                "thread_id": asset.thread_id,
+            }
+            for asset in expired_media
+        ],
+    }
+
+
+@app.get("/admin/audit/errors", tags=["Audit"])
+async def get_error_logs(
+    hours: int = 24,
+    event_type: Optional[str] = None,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Get all error logs for analysis (ADMIN ONLY).
+
+    Query Parameters:
+        hours: Number of hours to look back (default: 24)
+        event_type: Filter by specific event type
+    """
+    from services.audit_service import audit_service
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(hours=hours)
+
+    # Get failed events
+    result = audit_service.get_logs_sync(
+        start_date=start_date,
+        end_date=end_date,
+        status="failed",
+        page_size=1000,
+    )
+
+    # Filter by event type if specified
+    errors = result["logs"]
+    if event_type:
+        errors = [log for log in errors if log.event_type.value == event_type]
+
+    # Group by error type
+    errors_by_type: dict = {}
+    for log in errors:
+        key = log.event_type.value
+        if key not in errors_by_type:
+            errors_by_type[key] = []
+        errors_by_type[key].append(log)
+
+    return {
+        "time_range": f"Last {hours} hours",
+        "total_errors": len(errors),
+        "errors_by_type": errors_by_type,
+    }
+
+
+@app.get("/admin/audit/config", tags=["Audit"])
+async def get_admin_audit_config(_admin: dict = Depends(require_admin)):
+    """
+    Get audit system configuration (ADMIN ONLY).
+    """
+    from middleware.admin_middleware import get_admin_config
+    from services.database_service import database_service
+
+    return {
+        "admin_config": get_admin_config(),
+        "database_enabled": database_service.is_enabled(),
     }
 
 
@@ -1391,6 +1823,26 @@ async def startup_event():
     """Run on application startup"""
     logger.info(f"Starting {APP_NAME} v{APP_VERSION} in {APP_ENV} mode")
     print_config()
+
+    # Initialize database service for audit trail
+    if DATABASE_ENABLED:
+        try:
+            from services.database_service import database_service
+            from services.audit_service import audit_service
+
+            await database_service.initialize()
+            audit_service.set_database_service(database_service)
+            logger.info("Database service initialized for audit trail")
+        except Exception as e:
+            logger.warning(f"Failed to initialize database service: {e}")
+
+    # Log system startup
+    from services.audit_service import audit_service as audit
+
+    audit.log_event_sync(
+        event_type=AuditEventType.SYSTEM_STARTUP,
+        details={"app_version": APP_VERSION, "environment": APP_ENV},
+    )
 
 
 # =============================================================================

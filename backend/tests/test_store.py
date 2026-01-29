@@ -6,9 +6,8 @@
 #
 # =============================================================================
 
-import pytest
 from store import store
-from models import Post, User
+from models import User
 
 
 # =============================================================================
