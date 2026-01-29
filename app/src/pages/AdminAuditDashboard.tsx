@@ -167,20 +167,7 @@ export function AdminAuditDashboard() {
   const [userId, setUserId] = useState("");
   const [errorDays, setErrorDays] = useState(7);
 
-  // Require authentication
-  if (!isAuthenticated) {
-    return (
-      <div className="max-w-2xl mx-auto py-12 px-4">
-        <Card className="border-0 rounded-2xl bg-muted/30 p-8 text-center">
-          <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
-          <p className="text-muted-foreground mb-4">Please log in to access admin audit features.</p>
-          <Button onClick={() => navigate("/")}>Back to Home</Button>
-        </Card>
-      </div>
-    );
-  }
-
+  // Always call hooks (React Rules of Hooks)
   // Fetch comprehensive audit data
   const {
     data,
@@ -217,6 +204,11 @@ export function AdminAuditDashboard() {
     refetchData();
     refetchEvents();
     refetchErrors();
+
+  const handleRefresh = () => {
+    refetchData();
+    refetchEvents();
+    refetchErrors();
     refetchConfig();
   };
 
@@ -229,6 +221,20 @@ export function AdminAuditDashboard() {
       navigate(`/admin/audit/user/${userId}`);
     }
   };
+
+  // Require authentication - check after all hooks are called
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <Card className="border-0 rounded-2xl bg-muted/30 p-8 text-center">
+          <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
+          <p className="text-muted-foreground mb-4">Please log in to access admin audit features.</p>
+          <Button onClick={() => navigate("/")}>Back to Home</Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (dataError && !data) {
     return (

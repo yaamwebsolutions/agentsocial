@@ -123,7 +123,30 @@ export function AuditPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [page, setPage] = useState(1);
 
-  // Require authentication
+  // Always call hooks (React Rules of Hooks)
+  const { logs, loading: logsLoading, refetch: refetchLogs } = useAuditLogs({
+    page,
+    page_size: 50,
+    autoRefresh: isAuthenticated, // Only auto-refresh if authenticated
+  });
+
+  const { stats, loading: statsLoading, refetch: refetchStats } = useAuditStats();
+
+  const { assets, loading: assetsLoading, refetch: refetchAssets } = useMediaAssets({
+    limit: 50,
+  });
+
+  const { conversations, loading: convLoading, refetch: refetchConv } =
+    useConversationAudits();
+
+  const handleRefresh = () => {
+    refetchLogs();
+    refetchStats();
+    refetchAssets();
+    refetchConv();
+  };
+
+  // Require authentication - render auth prompt after hooks
   if (!isAuthenticated) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4">
@@ -136,21 +159,6 @@ export function AuditPage() {
       </div>
     );
   }
-
-  const { logs, loading: logsLoading, refetch: refetchLogs } = useAuditLogs({
-    page,
-    page_size: 50,
-    autoRefresh: true,
-  });
-
-  const { stats, loading: statsLoading, refetch: refetchStats } = useAuditStats();
-
-  const { assets, loading: assetsLoading, refetch: refetchAssets } = useMediaAssets({
-    limit: 50,
-  });
-
-  const { conversations, loading: convLoading, refetch: refetchConv } =
-    useConversationAudits();
 
   const handleRefresh = () => {
     refetchLogs();
