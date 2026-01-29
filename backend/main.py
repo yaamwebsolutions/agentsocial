@@ -175,6 +175,34 @@ app.add_middleware(
 app.add_middleware(AuditMiddleware)
 
 
+# =============================================================================
+# GLOBAL EXCEPTION HANDLER (ensures CORS headers on all error responses)
+# =============================================================================
+
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler that ensures CORS headers are included
+    in all error responses, preventing browser CORS errors on backend failures.
+    """
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": CORS_ORIGINS[0] if CORS_ORIGINS and CORS_ORIGINS[0] != "*" else "*",
+            "Access-Control-Allow-Credentials": "true" if allow_credentials else "false",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
+
+
 async def require_user(
     payload: Optional[dict] = Depends(get_optional_user),
 ):
@@ -1299,7 +1327,7 @@ async def get_audit_logs(
         except ValueError:
             pass
 
-    result = audit_service.get_logs(
+    result = await audit_service.get_logs(
         event_type=event_type_enum,
         user_id=user_id,
         resource_type=resource_type,
@@ -1394,7 +1422,6 @@ async def get_conversation_audit(
 
     # Get related logs for this thread
     logs_result = audit_service.get_logs_sync(thread_id=thread_id, page_size=100)
-    logs_result = audit_service.get_logs(thread_id=thread_id, page_size=100)
 
     return {
         "audit": audit,

@@ -80,11 +80,28 @@ export function AdminPage() {
         </div>
       </div>
 
+      {/* Quick Copy - User ID */}
+      <Card className="border-2 border-primary/50 rounded-2xl bg-primary/5 p-6 mb-4">
+        <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          Your User ID (for Admin Configuration)
+        </h2>
+        <div className="flex items-center gap-2 mt-4">
+          <code className="flex-1 text-sm bg-background px-4 py-3 rounded-lg font-mono break-all">
+            {user?.sub || "N/A"}
+          </code>
+          <Button onClick={() => copyToClipboard(user?.sub || "", "User ID")} className="shrink-0">
+            <Copy className="w-4 h-4 mr-2" />
+            Copy
+          </Button>
+        </div>
+      </Card>
+
       {/* User Info from AuthContext */}
       <Card className="border-0 rounded-2xl bg-muted/30 p-6 mb-4">
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-green-500" />
-          Logged In User
+          Logged In User Details
         </h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 rounded-lg bg-background">
@@ -95,11 +112,21 @@ export function AdminPage() {
             <span className="text-sm text-muted-foreground">Email</span>
             <span className="font-medium">{user?.email || "N/A"}</span>
           </div>
-          <div className="flex items-center justify-between p-3 rounded-lg bg-background">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-background group">
             <span className="text-sm text-muted-foreground">User ID (sub)</span>
-            <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate">
-              {user?.sub || "N/A"}
-            </code>
+            <div className="flex items-center gap-2">
+              <code className="text-xs bg-muted px-2 py-1 rounded max-w-[200px] truncate">
+                {user?.sub || "N/A"}
+              </code>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                onClick={() => copyToClipboard(user?.sub || "", "User ID")}
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </Card>

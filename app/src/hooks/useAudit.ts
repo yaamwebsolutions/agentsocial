@@ -16,7 +16,7 @@ import type {
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
-  "http://localhost:8000";
+  "https://api.yaam.click";
 
 function getStoredAccessToken(): string | null {
   const keys = ["auth0_id_token", "auth0_access_token", "access_token"];
@@ -89,13 +89,13 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
     fetchLogs();
   }, [fetchLogs]);
 
-  // Auto-refresh every 30 seconds if enabled
+  // Auto-refresh every 30 seconds if enabled AND no error
   useEffect(() => {
-    if (options.autoRefresh) {
+    if (options.autoRefresh && !error) {
       const interval = setInterval(fetchLogs, 30000);
       return () => clearInterval(interval);
     }
-  }, [fetchLogs, options.autoRefresh]);
+  }, [fetchLogs, options.autoRefresh, error]);
 
   return { logs, loading, error, refetch: fetchLogs };
 }
