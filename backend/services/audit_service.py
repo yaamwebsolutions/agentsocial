@@ -697,6 +697,41 @@ class AuditService:
             "image_count": image_count,
         }
 
+    def clear_logs(
+        self,
+        event_type: Optional[AuditEventType] = None,
+        before_date: Optional[datetime] = None,
+    ) -> int:
+        """
+        Clear audit logs from memory.
+
+        Args:
+            event_type: Only clear logs of this type (optional)
+            before_date: Only clear logs before this date (optional)
+
+        Returns:
+            Number of logs cleared
+        """
+        to_delete = []
+
+        for log_id, log in self._logs.items():
+            should_delete = True
+
+            if event_type and log.event_type != event_type:
+                should_delete = False
+
+            if before_date and log.timestamp >= before_date:
+                should_delete = False
+
+            if should_delete:
+                to_delete.append(log_id)
+
+        for log_id in to_delete:
+            del self._logs[log_id]
+
+        logger.info(f"Cleared {len(to_delete)} audit logs from memory")
+        return len(to_delete)
+
 
 # Global audit service instance
 audit_service = AuditService()

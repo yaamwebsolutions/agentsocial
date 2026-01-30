@@ -1851,6 +1851,50 @@ async def get_admin_audit_config(_admin: dict = Depends(require_admin)):
     }
 
 
+@app.delete("/admin/audit/logs", tags=["Audit"])
+async def clear_audit_logs(
+    event_type: Optional[str] = None,
+    before: Optional[str] = None,
+    _admin: dict = Depends(require_admin),
+):
+    """
+    Clear audit logs from memory (ADMIN ONLY).
+
+    Args:
+        event_type: Only clear logs of this type (optional)
+        before: Only clear logs before this ISO date (optional)
+
+    Returns:
+        Number of logs cleared
+    """
+    from services.audit_service import audit_service
+    from models import AuditEventType
+    from datetime import datetime
+
+    # Parse event type
+    target_event_type = None
+    if event_type:
+        try:
+            target_event_type = AuditEventType(event_type)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid event_type: {event_type}")
+
+    # Parse before date
+    before_date = None
+    if before:
+        try:
+            before_date = datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid date format. Use ISO format.")
+
+    cleared = audit_service.clear_logs(event_type=target_event_type, before_date=before_date)
+
+    return {
+        "cleared": cleared,
+        "message": f"Cleared {cleared} audit log(s) from memory"
+    }
+
+
 # =============================================================================
 # STARTUP
 # =============================================================================

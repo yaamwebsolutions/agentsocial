@@ -34,6 +34,9 @@ SKIP_PATHS = {
     "/openapi.json",
     "/favicon.ico",
     "/static/",
+    # Don't log audit endpoints - prevents infinite loop where reading logs creates more logs
+    "/audit",
+    "/admin/audit",
 }
 
 
@@ -142,19 +145,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             except Exception:
                 pass
 
-        # Log request start
-        await audit_service.log_event(
-            event_type=AuditEventType.SYSTEM_STARTUP,
-            user_id=user_id,
-            resource_type="api_request",
-            resource_id=request.url.path,
-            details=request_details,
-            status="pending",
-            ip_address=ip_address,
-            user_agent=user_agent,
-        )
-
-        # Process request
+        # Process request (don't log pending - reduces noise, prevents double logging)
         try:
             response = await call_next(request)
         except Exception as e:
@@ -267,11 +258,15 @@ class AuditMiddleware(BaseHTTPMiddleware):
         Returns:
             The appropriate audit event type
         """
-        # Check for errors
-        if status_code >= 400:
-            if path.startswith("/posts"):
-                return AuditEventType.SYSTEM_ERROR
+        # Auth failures (401, 403) are NOT system errors - they're expected
+        # Only log actual server errors (500+) as system errors
+        if status_code >= 500:
             return AuditEventType.SYSTEM_ERROR
+        # Don't log 4xx client errors at all - they're user input issues,
+        # not system errors. This prevents 401 auth errors from exploding
+        # the audit logs.
+        if status_code >= 400:
+            return AuditEventType.SYSTEM_STARTUP  # Use generic type, not ERROR
 
         # Map paths to event types
         if path.startswith("/auth/"):
